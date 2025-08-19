@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"time"
+	"sync"
 
 	// "os"
 	// "time"
@@ -12,6 +13,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	
 )
 
 // create a list for mac adresses that will inserted
@@ -24,7 +26,7 @@ type NetworkClient struct {
 	DeviceName string
 }
 
-var networkClients []NetworkClient
+// var networkClients []NetworkClient
 
 func main() {
 	fmt.Println(`
@@ -62,6 +64,9 @@ func main() {
 	}
 	defer handle.Close()
 
+	// packetChan := make(chan gopacket.Packet, 100)
+	// var wg sync.WaitGroup
+
 	ipBase := "192.168.1."
 	sourceIP := net.ParseIP("192.168.1.19").To4()
 	timeout := 10 * time.Second
@@ -74,26 +79,6 @@ func main() {
 	}
 }
 
-func CapturePacket() {
-	handle, err := pcap.OpenLive("wlo1", 1024, false, pcap.BlockForever)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer handle.Close()
-
-	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	for packet := range packetSource.Packets() {
-		fmt.Println(packet)
-		// checkForMitm(&packet)
-	}
-}
-
-func CheckForNewClients(packet gopacket.Packet) {
-	arplayer := packet.Layer(layers.LayerTypeARP)
-	if arplayer != nil {
-
-	}
-}
 
 func sendARP(handle *pcap.Handle, srcMAC net.HardwareAddr, dstIP, srcIP net.IP) error {
 	wl := layers.Ethernet{
@@ -112,10 +97,10 @@ func sendARP(handle *pcap.Handle, srcMAC net.HardwareAddr, dstIP, srcIP net.IP) 
 		DstHwAddress:      []byte{0, 0, 0, 0, 0, 0},
 		DstProtAddress:    dstIP.To4(),
 	}
-
+	
 	buf := gopacket.NewSerializeBuffer()
 	opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
-
+	
 	if err := gopacket.SerializeLayers(buf, opts, &wl, &arp); err != nil {
 		return err
 	}
@@ -124,28 +109,40 @@ func sendARP(handle *pcap.Handle, srcMAC net.HardwareAddr, dstIP, srcIP net.IP) 
 
 func scanARP(handle *pcap.Handle, iface *net.Interface, ipBase string, srcIP net.IP, timeout time.Duration) []NetworkClient {
 	var clients []NetworkClient
+	var mu sync.Mutex
 	fmt.Println("[!] Pinging For Clients")
-	for i := 1; i <= 254; i++ {
-		ip := net.ParseIP(fmt.Sprintf("%s%d", ipBase, i))
-		_ = sendARP(handle, iface.HardwareAddr, ip, srcIP)
-	}
+
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	stop := time.After(timeout)
-	for {
-		select {
-		case packet := <-packetSource.Packets():
-			if arpLayer := packet.Layer(layers.LayerTypeARP); arpLayer != nil {
+
+	go func(){
+		for packet := range packetSource.Packets(){
+			if arpLayer := packet.Layer(layers.LayerTypeARP); arpLayer != nil{
 				arp, _ := arpLayer.(*layers.ARP)
-				if arp.Operation == layers.ARPReply {
-					clients = append(clients, NetworkClient{
+				if arp.Operation == layers.ARPReply{
+					client := NetworkClient{
 						MacAddress: net.HardwareAddr(arp.SourceHwAddress).String(),
-						IpAddress:  net.IP(arp.SourceProtAddress).String(),
-					})
+						IpAddress: net.IP(arp.SourceProtAddress).String(),
+					}
+					mu.Lock()
+					clients  = append(clients, client)
+					mu.Unlock()
 				}
 			}
-		case <-stop:
-			return clients
-		}
-	}
 
+		}
+	}()
+
+	var wg sync.WaitGroup
+	for i :=1; i <= 254; i++{
+		wg.Add(1)
+		go func (i int)  {
+			defer wg.Done()
+			ip:= net.ParseIP(fmt.Sprint("%s%d", ipBase,i))
+			_ = sendARP(handle, iface.HardwareAddr, ip, srcIP)
+		}(i)
+	}
+	wg.Wait()
+	<-stop
+	return clients
 }
