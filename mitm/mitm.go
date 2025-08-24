@@ -44,10 +44,10 @@ func SendARP(handle *pcap.Handle, srcMAC net.HardwareAddr, dstIP, srcIP net.IP) 
 	return handle.WritePacketData(buf.Bytes())
 }
 
-func ScanARP(handle *pcap.Handle, iface *net.Interface, ipBase string, srcIP net.IP, timeout time.Duration) []utils.NetworkClient {
+func ScanARP(handle *pcap.Handle, iface *net.Interface, ipBase string, srcIP net.IP, timeout time.Duration) ([]utils.NetworkClient, error) {
 	var clients []utils.NetworkClient
 	var mu sync.Mutex
-	fmt.Println("[!] Pinging For Clients")
+	// fmt.Println("[!] Pinging For Clients")
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	stop := time.After(timeout)
@@ -102,7 +102,7 @@ func ScanARP(handle *pcap.Handle, iface *net.Interface, ipBase string, srcIP net
 
 	<-stop
 	checkForMitmAttack(clients)
-	return clients
+	return clients, nil
 }
 
 func checkForMitmAttack(clients []utils.NetworkClient) {

@@ -1,69 +1,157 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"krain-sec/mitm"
-	// "krain-sec/resources"
 	"krain-sec/utils"
 	"log"
 	"net"
-	"strings"
+	"os"
+	"os/signal"
+	"syscall"
+
+	// "strings"
 	"time"
 
 	"github.com/google/gopacket/pcap"
 )
 
+type Config struct {
+	InterfaceName string
+	Timeout       time.Duration
+	IpBase        string
+	SourceIP      net.IP
+}
+
+type Scanner struct {
+	config Config
+	handle *pcap.Handle
+	iface  *net.Interface
+}
+
+func NewScanner(interfaceName string) (*Scanner, error) {
+	iface, err := net.InterfaceByName(interfaceName)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Interface %s: %w", interfaceName, err)
+	}
+
+	handle, err := pcap.OpenLive(iface.Name, 65536, false, pcap.BlockForever)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to open pcap handle: %w", err)
+	}
+
+	config := Config{
+		InterfaceName: interfaceName,
+		Timeout:       5 * time.Second,
+	}
+	if err := setIPConfig(&config, iface); err != nil {
+		handle.Close()
+		return nil, err
+	}
+
+	return &Scanner{
+		config: config,
+		handle: handle,
+		iface:  iface,
+	}, nil
+}
+
+func (s *Scanner) displayResults(clients []utils.NetworkClient) {
+	fmt.Println("\nDiscovered devices:")
+	fmt.Println("| IP Address\t\t | MAC Address\t\t |")
+	fmt.Println("|------------------------|-------------------|")
+
+	for _, c := range clients {
+		fmt.Printf("| %-20s | %-17s |\n", c.IpAddress, c.MacAddress)
+	}
+	fmt.Printf("Total devices: %d\n\n", len(clients))
+}
+func setIPConfig(config *Config, iface *net.Interface) error {
+	addrs, err := iface.Addrs()
+
+	if err != nil {
+		return fmt.Errorf("failed to adddress for the interface %s: %w", config.InterfaceName, err)
+	}
+
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && ipNet.IP.To4() != nil {
+			ipv4 := ipNet.IP.To4()
+			config.SourceIP = ipv4
+
+			network := ipNet.IP.Mask(ipNet.Mask)
+			if netv4 := network.To4(); netv4 != nil {
+				config.IpBase = fmt.Sprintf("%d.%d.%d", netv4[0], netv4[1], netv4[2])
+			}
+			break
+		}
+	}
+
+	if config.SourceIP == nil {
+		return fmt.Errorf("no valid ipv4 %s", config.InterfaceName)
+	}
+	return nil
+}
+
+func (s *Scanner) Scan(ctx context.Context) ([]utils.NetworkClient, error) {
+	return mitm.ScanARP(s.handle, s.iface, s.config.IpBase, s.config.SourceIP, s.config.Timeout)
+}
+
+func (s *Scanner) Close() {
+	if s.handle != nil {
+		s.handle.Close()
+	}
+}
 
 func main() {
+
 	utils.Banner()
-
-	ifaceName := "wlo1"
-	iface, err := net.InterfaceByName(ifaceName)
+	scanner, err := NewScanner("wlo1")
 	if err != nil {
-		log.Fatalf("Failed to get interface %s: %v", ifaceName, err)
+		log.Fatalf("Failed to create Scanner", err)
 	}
 
-	fmt.Println("using interface:", iface.Name, iface.HardwareAddr)
-	handle, err := pcap.OpenLive(iface.Name, 65536, false, pcap.BlockForever)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer handle.Close()
+	defer scanner.Close()
+	fmt.Printf("Using interface: %s (%s)\n", scanner.iface.Name, scanner.iface.HardwareAddr)
+	fmt.Printf("Using IP base: %s\n", scanner.config.IpBase)
+	fmt.Printf("Using IP source: %s\n", scanner.config.SourceIP)
 
-	var ipBase string
-	var sourceIP net.IP
-	if addr, err := iface.Addrs(); err != nil {
-		log.Fatalf("Failed to get addresses for interface %s: %v", ifaceName, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		fmt.Println("\n Received Interrupt signal shutting down")
+		cancel()
+	}()
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	if clients, err := scanner.Scan(ctx); err != nil {
+		log.Printf("Scan Error : %v", err)
 	} else {
-		for _, a := range addr[:1] {
-			if ipNet, ok := a.(*net.IPNet); ok {
-				ipParts := strings.Split(ipNet.IP.String(), ".")
-				if len(ipParts) == 4 {
-					ipBase = fmt.Sprintf("%s.%s.%s.", ipParts[0], ipParts[1], ipParts[2])
-				}
-				fmt.Println("Using IP base:", ipBase)
-				sourceIP = ipNet.IP.To4()
-				fmt.Println("Using IP source:", sourceIP)
-			}
-		}
+		scanner.displayResults(clients)
 	}
-	timeout := 5 * time.Second
 
-	// go resources.Resources()
 	for {
-		clientsChan := make(chan []utils.NetworkClient)
-		go func() {
-			clients := mitm.ScanARP(handle, iface, ipBase, sourceIP, timeout)
-			clientsChan <- clients
-			close(clientsChan)
-		}()
-		// go resources.CheckCpu()
-
-		clients := <-clientsChan
-		fmt.Println("Discoverd devices: ")
-		fmt.Println("| IP Address\t | MAC Address |")
-		for _, c := range clients {
-			fmt.Printf("IP: %s\t MAC: %s \n", c.IpAddress, c.MacAddress)
+		select {
+		case <-ctx.Done():
+			fmt.Println("Scanner Stopped")
+			return
+		case <-ticker.C:
+			clients, err := scanner.Scan(ctx)
+			if err != nil {
+				log.Printf("Scan error: %v", err)
+				continue
+			}
+			scanner.displayResults(clients)
 		}
+
 	}
+
 }
