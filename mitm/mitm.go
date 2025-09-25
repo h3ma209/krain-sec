@@ -45,6 +45,7 @@ func SendARP(handle *pcap.Handle, srcMAC net.HardwareAddr, dstIP, srcIP net.IP) 
 }
 
 func ScanARP(handle *pcap.Handle, iface *net.Interface, ipBase string, srcIP net.IP, timeout time.Duration) ([]utils.NetworkClient, error) {
+	// fmt.Printf("[*] Scanning for devices using ARP... %s\n", ipBase)
 	var clients []utils.NetworkClient
 	var mu sync.Mutex
 	// fmt.Println("[!] Pinging For Clients")
@@ -106,22 +107,23 @@ func ScanARP(handle *pcap.Handle, iface *net.Interface, ipBase string, srcIP net
 }
 
 func checkForMitmAttack(clients []utils.NetworkClient) {
-	possible_poisned := []utils.NetworkClient{}
-	// check for same mac address with different ip addresses
-	for i := 0; i < len(clients); i++ {
-		for j := i + 1; j < len(clients); j++ {
-			if clients[i].MacAddress == clients[j].MacAddress {
-				possible_poisned = append(possible_poisned, clients[i])
-				break
+	macGroups := make(map[string][]utils.NetworkClient)
+
+	for _, client := range clients {
+		macGroups[client.MacAddress] = append(macGroups[client.MacAddress], client)
+	}
+
+	var susClients []utils.NetworkClient
+	for mac, macGroup := range macGroups {
+		if len(macGroup) > 1 {
+			fmt.Printf("[!] Potential MITM attack detected! Multiple IPs for MAC %s: ", mac)
+			for _, client := range macGroup {
+				fmt.Printf("  - IP: %s\n", client.IpAddress)
+				susClients = append(susClients, client)
 			}
 		}
 	}
-	if len(possible_poisned) > 0 {
-		fmt.Println("[!] Possible MITM attack detected:")
-		for _, client := range possible_poisned {
-			fmt.Printf("IP: %s MAC: %s \n", client.IpAddress, client.MacAddress)
-		}
-	} else {
-		fmt.Println("[*] No MITM attack detected.")
+	if len(susClients) == 0 {
+		fmt.Println("[+] No MITM attack detected.")
 	}
 }
