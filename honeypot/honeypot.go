@@ -95,6 +95,7 @@ func (h *Honeypot) handleConnections(ctx context.Context, service *Service) {
 
 			fmt.Printf("[+] New connection from %s to service %s on port %d\n", client.IP, service.Name, service.Port)
 			go h.handleConnection(ctx, conn)
+			h.AnalyzeClientsIntentions()
 		case err := <-errChan:
 			select {
 			case <-ctx.Done():
@@ -135,5 +136,23 @@ func (h *Honeypot) StopAllServices() {
 			fmt.Printf("Stopping Service %s on port %d\n", service.Name, service.Port)
 			service.listener.Close()
 		}
+	}
+}
+
+func (h *Honeypot) AnalyzeClientsIntentions() {
+	clientsWithServices := make(map[string][]string, 0)
+	for i := range h.services {
+		service := &h.services[i]
+		service.mutex.Lock()
+		for _, client := range service.clients {
+			ipStr := client.IP.String()
+			clientInfo := fmt.Sprintf("serviceName: %s, conTime: %s", service.Name, client.ConnectedAt.Format("2006-01-02 15:04:05"))
+			clientsWithServices[ipStr] = append(clientsWithServices[ipStr], clientInfo)
+		}
+		service.mutex.Unlock()
+	}
+
+	for ip, serviceInfo := range clientsWithServices {
+		fmt.Printf("Client %s interacted with services: %v\n", ip, serviceInfo)
 	}
 }
