@@ -124,7 +124,7 @@ func (h *Honeypot) handleConnection(ctx context.Context, conn net.Conn) {
 			fmt.Println("Probably connection canceled")
 		}
 	case <-time.After(1 * time.Second):
-		fmt.Printf("Closing connection from %s\n", conn.RemoteAddr())
+		// fmt.Printf("Closing connection from %s\n", conn.RemoteAddr())
 	}
 }
 

@@ -12,6 +12,7 @@ require (
 require (
 	github.com/gdamore/encoding v1.0.1 // indirect
 	github.com/gdamore/tcell/v2 v2.9.0 // indirect
+	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
 	github.com/rivo/tview v0.42.0 // indirect
 	golang.org/x/term v0.34.0 // indirect
 )

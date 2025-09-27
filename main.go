@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"krain-sec/geolocate"
 	"krain-sec/honeypot"
 	"krain-sec/utils"
 	"sync"
@@ -235,6 +236,13 @@ type Application struct {
 // }
 
 func main() {
+
+	city, err := geolocate.LocateIP("185.75.224.70")
+	fmt.Println("Geolocating IP...")
+	if err != nil {
+		fmt.Printf("Failed to geolocate IP: %v", err)
+	}
+	fmt.Printf("Geolocated IP: %s\n", city)
 
 	utils.Banner()
 	ctx, cancel := context.WithCancel(context.Background())
