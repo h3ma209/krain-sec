@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"krain-sec/geolocate"
 	"krain-sec/honeypot"
 	"krain-sec/utils"
+	"log"
 	"sync"
 
 	// "krain-sec/mitm"
@@ -237,13 +237,11 @@ type Application struct {
 
 func main() {
 
-	city, err := geolocate.LocateIP("185.75.224.70")
-	fmt.Println("Geolocating IP...")
-	if err != nil {
-		fmt.Printf("Failed to geolocate IP: %v", err)
+	if err := utils.InitCSV(); err != nil {
+		log.Fatalf("Failed to initialize CSV: %v", err)
 	}
-	fmt.Printf("Geolocated IP: %s\n", city)
-
+	defer utils.CloseCSV()
+	
 	utils.Banner()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

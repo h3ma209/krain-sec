@@ -3,6 +3,8 @@ package honeypot
 import (
 	"context"
 	"fmt"
+	"krain-sec/geolocate"
+	"krain-sec/utils"
 	"net"
 	"sync"
 	"time"
@@ -94,6 +96,14 @@ func (h *Honeypot) handleConnections(ctx context.Context, service *Service) {
 			service.mutex.Unlock()
 
 			fmt.Printf("[+] New connection from %s to service %s on port %d\n", client.IP, service.Name, service.Port)
+			loc, err := geolocate.LocateIP(client.IP.String())
+			if err != nil {
+				fmt.Printf("Failed to geolocate IP: %v\n", err)
+				utils.WriteToCsv([]string{time.Now().Format("2006-01-02 15:04:05"), client.IP.String(), service.Name, fmt.Sprintf("%d", service.Port), "Failed to geolocate IP"})
+			} else {
+				fmt.Printf("Geolocated IP %s: %s\n", client.IP, loc)
+				utils.WriteToCsv([]string{time.Now().Format("2006-01-02 15:04:05"), client.IP.String(), service.Name, fmt.Sprintf("%d", service.Port), fmt.Sprintf("%s", loc)})
+			}
 			go h.handleConnection(ctx, conn)
 			h.AnalyzeClientsIntentions()
 		case err := <-errChan:
