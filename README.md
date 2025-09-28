@@ -36,5 +36,5 @@ The project is built for learning, experimentation, and real-world use in detect
 Clone the repo:
 
 ```bash
-git clone https://github.com/yourusername/golang-cybersecurity-toolkit.git
-cd golang-cybersecurity-toolkit
+cd krain-sec
+sudo go run main.go
