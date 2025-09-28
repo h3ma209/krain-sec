@@ -4,10 +4,6 @@
 </p>
 
 <h1 align="center">Golang Cybersecurity Toolkit 🛡️</h1>
-
-An **open-source cybersecurity project written in Go** aiming to provide practical, lightweight, and extensible security tools.  
-The project is built for learning, experimentation, and real-world use in detecting and analyzing malicious behavior.
-
 ---
 
 ## ✨ Features
