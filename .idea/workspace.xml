@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="cf114ecb-9ee0-4a93-b724-efbc3b888a6a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/clients_data/2025-09-27.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/geolocate/geolocate.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/honeypot/honeypot.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mitm/mitm.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/cpu.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/memory.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/resources.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/csvs.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/types.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/utils.go" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="11" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="GOROOT" url="file://$USER_HOME$/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.3.darwin-arm64" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0000000000009222" />
+      <entry key="S2" value="1.0009799530508485" />
+      <entry key="S5" value="1.0627912118214904" />
+      <entry key="S10" value="1.2739309694148837" />
+      <entry key="S30" value="2.221624236449386" />
+      <entry key="S60" value="3.1239938443498554" />
+      <entry key="M2" value="3.8878674648002014" />
+      <entry key="M5" value="4.503913077634555" />
+      <entry key="M10" value="4.74247797499018" />
+      <entry key="M15" value="4.826136384471608" />
+      <entry key="M30" value="4.911957424469619" />
+      <entry key="H1" value="4.955697275393653" />
+      <entry key="H2" value="4.977777804747602" />
+      <entry key="H4" value="4.988871134563821" />
+      <entry key="D1" value="4.998142716269657" />
+      <entry key="W1" value="4.999734613127583" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="0.02895587693407408" />
+      <entry key="MS500" value="0.4924332214486911" />
+      <entry key="S2" value="0.8386750171683885" />
+      <entry key="S5" value="0.9943568120273859" />
+      <entry key="S10" value="1.2388855726449026" />
+      <entry key="S30" value="2.2083435266765665" />
+      <entry key="S60" value="3.1163644765480365" />
+      <entry key="M2" value="3.883603686426035" />
+      <entry key="M5" value="4.502057971764168" />
+      <entry key="M10" value="4.741521033401673" />
+      <entry key="M15" value="4.825491520545929" />
+      <entry key="M30" value="4.91163144361338" />
+      <entry key="H1" value="4.955533379035148" />
+      <entry key="H2" value="4.97769562770872" />
+      <entry key="H4" value="4.988829988529895" />
+      <entry key="D1" value="4.9981358505836715" />
+      <entry key="W1" value="4.999733632118713" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 5
+}]]></component>
+  <component name="ProjectId" id="3GDuihv9s1pQsNHZz7Re5qm1XPk" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.GoLinterPluginOnboardingV2": "true",
+    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.analysis.ui.options.defaults": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "refactor",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "/Users/hema",
+    "nodejs_package_manager_path": "npm"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-gosdk-72a9cf600ed8-3dd3895e5e08-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-261.25134.147" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-GO-261.25134.147" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="cf114ecb-9ee0-4a93-b724-efbc3b888a6a" name="Changes" comment="" />
+      <created>1783518589427</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1783518589427</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
