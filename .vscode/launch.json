@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        
+    //   {
+    //     "name": "Launch Admin",
+    //     "type": "go",
+    //     "request": "launch",
+    //     "mode": "auto",
+    //     "cwd": "${workspaceFolder}",
+    //     "envFile": "${cwd}/dev.env",
+    //     "program": "${cwd}/cmd/admin/main.admin.go"
+    //   },
+      {
+        "name": "Launch Krain",
+        "type": "go",
+        "request": "launch",
+        "mode": "auto",
+        "cwd": "${workspaceFolder}",
+        // "envFile": "${cwd}/dev.user.env",
+        "program": "${cwd}/cmd/krain-sec/main.go"
+      },
+
+      
+    ]
+    }

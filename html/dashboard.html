@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Krain Security — Operations Console</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b1220;
+      --bg-elev: #111827;
+      --bg-panel: #151d2e;
+      --border: #243044;
+      --border-strong: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --faint: #64748b;
+      --accent: #3b82f6;
+      --ok: #22c55e;
+      --warn: #eab308;
+      --crit: #ef4444;
+      --info: #38bdf8;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -20%, rgba(37, 99, 235, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(14, 165, 233, 0.06), transparent),
+        var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      display: grid;
+      place-items: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand h1 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #f8fafc;
+      line-height: 1.2;
+    }
+
+    .brand small {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--faint);
+      font-weight: 400;
+    }
+
+    .nav {
+      display: flex;
+      gap: 0.25rem;
+      flex: 1;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .nav a {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      border-radius: 6px;
+    }
+
+    .nav a:hover { color: #f8fafc; background: rgba(255,255,255,0.04); }
+    .nav a.active {
+      color: #f8fafc;
+      background: rgba(59, 130, 246, 0.15);
+      box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+    }
+
+    .userbox {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .userbox .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+
+    .userbox .name { color: #f8fafc; font-weight: 500; }
+
+    .btn-ghost {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover { color: #f8fafc; border-color: var(--faint); }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: rgba(17, 24, 39, 0.6);
+      padding: 1.25rem 0.875rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .side-section h3 {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--faint);
+      padding: 0 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .side-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.65rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      border-radius: 6px;
+      margin-bottom: 2px;
+    }
+
+    .side-link:hover { background: rgba(255,255,255,0.04); color: #f8fafc; }
+    .side-link.active {
+      background: rgba(59, 130, 246, 0.12);
+      color: #f8fafc;
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+
+    .badge.warn {
+      background: rgba(234, 179, 8, 0.15);
+      color: #fde047;
+    }
+
+    .env {
+      margin-top: auto;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-panel);
+      font-size: 0.75rem;
+    }
+
+    .env .row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.35rem;
+      color: var(--muted);
+    }
+
+    .env .row:last-child { margin-bottom: 0; }
+    .env .val { color: #f8fafc; font-variant-numeric: tabular-nums; }
+
+    main {
+      padding: 1.5rem 1.75rem 2.5rem;
+      overflow: auto;
+    }
+
+    .page-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .page-head h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .page-head p {
+      margin-top: 0.35rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--faint);
+      flex-wrap: wrap;
+    }
+
+    .meta time {
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+    }
+
+    .live {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--ok);
+    }
+
+    .live::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ok);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.875rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .stat {
+      padding: 1rem 1.1rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .stat .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--faint);
+      margin-bottom: 0.45rem;
+    }
+
+    .stat .value {
+      font-size: 1.55rem;
+      font-weight: 650;
+      color: #f8fafc;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .stat .delta {
+      margin-top: 0.4rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .stat .delta.up { color: #fca5a5; }
+    .stat .delta.down { color: #86efac; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1rem;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-head h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .panel-head .hint {
+      font-size: 0.7rem;
+      color: var(--faint);
+    }
+
+    .panel-body { padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.7rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    th {
+      color: var(--faint);
+      font-weight: 500;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: rgba(0,0,0,0.15);
+    }
+
+    td { color: var(--text); }
+    td.mono, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .sev {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .sev.critical { background: rgba(239,68,68,0.2); color: #fca5a5; }
+    .sev.high { background: rgba(249,115,22,0.18); color: #fdba74; }
+    .sev.medium { background: rgba(234,179,8,0.15); color: #fde047; }
+    .sev.low { background: rgba(34,197,94,0.15); color: #86efac; }
+    .sev.info { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+
+    .status {
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status.open { color: #fca5a5; }
+    .status.investigating { color: #fdba74; }
+    .status.contained { color: #fde047; }
+    .status.resolved { color: #86efac; }
+    .status.ok { color: #86efac; }
+
+    .alert-list { list-style: none; }
+
+    .alert-list li {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.75rem;
+      align-items: start;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .alert-list li:last-child { border-bottom: none; }
+
+    .alert-list .title {
+      font-size: 0.8125rem;
+      color: #f8fafc;
+      margin-bottom: 0.2rem;
+    }
+
+    .alert-list .sub {
+      font-size: 0.72rem;
+      color: var(--faint);
+    }
+
+    .alert-list .when {
+      font-size: 0.7rem;
+      color: var(--faint);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .services {
+      display: grid;
+      gap: 0;
+    }
+
+    .svc {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+
+    .svc:last-child { border-bottom: none; }
+
+    .svc-name { color: #f8fafc; }
+    .svc-meta { font-size: 0.7rem; color: var(--faint); margin-top: 0.15rem; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      color: #86efac;
+    }
+
+    .pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ok);
+    }
+
+    .pill.degraded { color: #fde047; }
+    .pill.degraded::before { background: var(--warn); }
+
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.65rem 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.7rem;
+      color: var(--faint);
+      background: rgba(11, 18, 32, 0.9);
+      flex-wrap: wrap;
+    }
+
+    .footer-bar span { font-variant-numeric: tabular-nums; }
+
+    @media (max-width: 1100px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 800px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">KS</div>
+      <div>
+        <h1>Krain Security</h1>
+        <small>Threat Detection &amp; Response</small>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Primary">
+      <a href="/dashboard" class="active">Overview</a>
+      <a href="#">Incidents</a>
+      <a href="#">Endpoints</a>
+      <a href="#">Network</a>
+      <a href="#">Intel</a>
+      <a href="#">Reports</a>
+    </nav>
+
+    <div class="userbox">
+      <span class="dot" title="Online"></span>
+      <div>
+        <div class="name">admin</div>
+        <div>SOC Tier-1 · us-east-1</div>
+      </div>
+      <button class="btn-ghost" type="button" onclick="document.cookie='auth_token=; Max-Age=0; path=/'; location.href='/'">Sign out</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="side-section">
+        <h3>Workspaces</h3>
+        <a class="side-link active" href="#">Production <span class="badge">4</span></a>
+        <a class="side-link" href="#">Staging</a>
+        <a class="side-link" href="#">Corporate IT</a>
+      </div>
+      <div class="side-section">
+        <h3>Queues</h3>
+        <a class="side-link" href="#">Unassigned <span class="badge">7</span></a>
+        <a class="side-link" href="#">My cases <span class="badge warn">2</span></a>
+        <a class="side-link" href="#">Escalations</a>
+        <a class="side-link" href="#">Closed (7d)</a>
+      </div>
+      <div class="env">
+        <div class="row"><span>Tenant</span><span class="val">ks-prod-8841</span></div>
+        <div class="row"><span>Sensor fleet</span><span class="val">1,284</span></div>
+        <div class="row"><span>Ingest lag</span><span class="val">1.2s</span></div>
+        <div class="row"><span>License</span><span class="val">Enterprise</span></div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="page-head">
+        <div>
+          <h2>Operations overview</h2>
+          <p>Live posture for production workspace · last successful policy sync 09:14 UTC</p>
+        </div>
+        <div class="meta">
+          <span class="live">Live</span>
+          <span>Refreshed <time id="clock">—</time></span>
+          <span>Retention: 90 days</span>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Open incidents</div>
+          <div class="value">14</div>
+          <div class="delta up">+3 since 00:00 UTC</div>
+        </div>
+        <div class="stat">
+          <div class="label">Critical / High</div>
+          <div class="value">2 / 5</div>
+          <div class="delta">1 awaiting triage</div>
+        </div>
+        <div class="stat">
+          <div class="label">Endpoints online</div>
+          <div class="value">1,247</div>
+          <div class="delta down">37 offline · 0.3%</div>
+        </div>
+        <div class="stat">
+          <div class="label">Blocked today</div>
+          <div class="value">8,419</div>
+          <div class="delta">threats · 142 unique IOCs</div>
+        </div>
+      </div>
+
+      <div class="layout">
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Active incidents</h3>
+            <span class="hint">Sorted by severity · last 24h</span>
+          </div>
+          <div class="panel-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Severity</th>
+                  <th>Title</th>
+                  <th>Asset</th>
+                  <th>Status</th>
+                  <th>Age</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">INC-28491</td>
+                  <td><span class="sev critical">Critical</span></td>
+                  <td>Suspicious PowerShell download cradle</td>
+                  <td class="mono">ws-finance-042</td>
+                  <td><span class="status investigating">Investigating</span></td>
+                  <td class="mono">18m</td>
+                </tr>
+                <tr>
+                  <td class="mono">INC-28487</td>
+                  <td><span class="sev high">High</span></td>
+                  <td>Brute-force against VPN gateway</td>
+                  <td class="mono">vpn-edge-01</td>
+                  <td><span class="status contained">Contained</span></td>
+                  <td class="mono">1h 12m</td>
+                </tr>
+                <tr>
+                  <td class="mono">INC-28482</td>
+                  <td><span class="sev high">High</span></td>
+                  <td>Possible credential stuffing on SSO</td>
+                  <td class="mono">idp.corp.local</td>
+                  <td><span class="status open">Open</span></td>
+                  <td class="mono">2h 04m</td>
+                </tr>
+                <tr>
+                  <td class="mono">INC-28476</td>
+                  <td><span class="sev medium">Medium</span></td>
+                  <td>Unusual outbound DNS (DGA-like)</td>
+                  <td class="mono">srv-build-09</td>
+                  <td><span class="status investigating">Investigating</span></td>
+                  <td class="mono">4h 31m</td>
+                </tr>
+                <tr>
+                  <td class="mono">INC-28471</td>
+                  <td><span class="sev medium">Medium</span></td>
+                  <td>Unapproved RDP from external ASN</td>
+                  <td class="mono">jump-prod-02</td>
+                  <td><span class="status contained">Contained</span></td>
+                  <td class="mono">6h 18m</td>
+                </tr>
+                <tr>
+                  <td class="mono">INC-28463</td>
+                  <td><span class="sev low">Low</span></td>
+                  <td>Sensor version drift (agent &lt; 4.12)</td>
+                  <td class="mono">fleet · 12 hosts</td>
+                  <td><span class="status open">Open</span></td>
+                  <td class="mono">11h</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Alert stream</h3>
+              <span class="hint">Realtime</span>
+            </div>
+            <ul class="alert-list">
+              <li>
+                <span class="sev critical">Crit</span>
+                <div>
+                  <div class="title">Encoded PowerShell − encodedCommand</div>
+                  <div class="sub">MITRE T1059.001 · ws-finance-042 · user j.chen</div>
+                </div>
+                <span class="when">14:52:08</span>
+              </li>
+              <li>
+                <span class="sev high">High</span>
+                <div>
+                  <div class="title">Failed auth spike — 847 attempts / 5m</div>
+                  <div class="sub">Source 185.220.101.x · Tor exit · vpn-edge-01</div>
+                </div>
+                <span class="when">14:49:41</span>
+              </li>
+              <li>
+                <span class="sev medium">Med</span>
+                <div>
+                  <div class="title">New process: certutil.exe −urlcache</div>
+                  <div class="sub">LOLBin · srv-build-09 · parent cmd.exe</div>
+                </div>
+                <span class="when">14:41:17</span>
+              </li>
+              <li>
+                <span class="sev info">Info</span>
+                <div>
+                  <div class="title">IOC match: hash in VirusTotal (3/72)</div>
+                  <div class="sub">SHA256 a4f1…9c2e · quarantined</div>
+                </div>
+                <span class="when">14:38:02</span>
+              </li>
+              <li>
+                <span class="sev low">Low</span>
+                <div>
+                  <div class="title">Policy update applied — endpoint.ruleset v4.12.8</div>
+                  <div class="sub">1,241 hosts · 6 pending reboot</div>
+                </div>
+                <span class="when">14:30:55</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Service health</h3>
+              <span class="hint">Region us-east-1</span>
+            </div>
+            <div class="services">
+              <div class="svc">
+                <div>
+                  <div class="svc-name">Detection engine</div>
+                  <div class="svc-meta">v3.8.2 · p95 42ms</div>
+                </div>
+                <span class="pill">Healthy</span>
+              </div>
+              <div class="svc">
+                <div>
+                  <div class="svc-name">Event ingest</div>
+                  <div class="svc-meta">18.4k eps · backlog 0</div>
+                </div>
+                <span class="pill">Healthy</span>
+              </div>
+              <div class="svc">
+                <div>
+                  <div class="svc-name">Threat intel feed</div>
+                  <div class="svc-meta">Last sync 3m ago</div>
+                </div>
+                <span class="pill">Healthy</span>
+              </div>
+              <div class="svc">
+                <div>
+                  <div class="svc-name">Sandbox analysis</div>
+                  <div class="svc-meta">Queue depth 11 · ETA 4m</div>
+                </div>
+                <span class="pill degraded">Degraded</span>
+              </div>
+              <div class="svc">
+                <div>
+                  <div class="svc-name">Identity connector (Okta)</div>
+                  <div class="svc-meta">SCIM · last poll 1m</div>
+                </div>
+                <span class="pill">Healthy</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <section class="panel" style="margin-top:1rem;">
+        <div class="panel-head">
+          <h3>Audit trail</h3>
+          <span class="hint">Privileged actions · this session</span>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Time (UTC)</th>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Result</th>
+                <th>Source IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono" id="login-time">—</td>
+                <td>admin</td>
+                <td>Console sign-in</td>
+                <td class="mono">/dashboard</td>
+                <td><span class="status ok">Success</span></td>
+                <td class="mono" id="client-ip">—</td>
+              </tr>
+              <tr>
+                <td class="mono">14:41:02</td>
+                <td>system</td>
+                <td>Health probe</td>
+                <td class="mono">detection-engine</td>
+                <td><span class="status ok">OK</span></td>
+                <td class="mono">10.0.4.12</td>
+              </tr>
+              <tr>
+                <td class="mono">14:30:55</td>
+                <td>policy-bot</td>
+                <td>Config sync</td>
+                <td class="mono">endpoint.ruleset</td>
+                <td><span class="status ok">Applied</span></td>
+                <td class="mono">10.0.4.8</td>
+              </tr>
+              <tr>
+                <td class="mono">13:58:11</td>
+                <td>m.okafor</td>
+                <td>Isolate host</td>
+                <td class="mono">ws-finance-042</td>
+                <td><span class="status ok">Queued</span></td>
+                <td class="mono">10.32.8.104</td>
+              </tr>
+              <tr>
+                <td class="mono">13:12:44</td>
+                <td>admin</td>
+                <td>API key rotated</td>
+                <td class="mono">siem-forwarder</td>
+                <td><span class="status ok">Success</span></td>
+                <td class="mono">10.32.8.19</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer-bar">
+    <div>Krain Security Console · build 2026.07.08-rc3 · tenant ks-prod-8841</div>
+    <div>
+      Session expires <span id="session-exp">—</span>
+      · Support: soc-ops@krain.security
+    </div>
+  </footer>
+
+  <script>
+    function pad(n) { return String(n).padStart(2, "0"); }
+
+    function fmtUTC(d) {
+      return pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds()) + " UTC";
+    }
+
+    function fmtStamp(d) {
+      return pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds());
+    }
+
+    function tick() {
+      document.getElementById("clock").textContent = fmtUTC(new Date());
+    }
+
+    tick();
+    setInterval(tick, 1000);
+
+    var now = new Date();
+    document.getElementById("login-time").textContent = fmtStamp(now);
+
+    var exp = new Date(now.getTime() + 60 * 60 * 1000);
+    document.getElementById("session-exp").textContent =
+      pad(exp.getUTCHours()) + ":" + pad(exp.getUTCMinutes()) + " UTC";
+
+    document.getElementById("client-ip").textContent = "10.32.8.19";
+  </script>
+</body>
+</html>
