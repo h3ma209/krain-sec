@@ -112,10 +112,24 @@ These are **intentional bait**. Never reuse on real systems.
 
 ## Docker Compose
 
-Runs the honeypot with MySQL + Grafana:
+Production stack (honeypot + MySQL + Grafana):
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # first time — edit secrets / HONEYTOKEN_BASE_URL
+make prod              # build, start, print URLs
+```
+
+| Make target | Action |
+|-------------|--------|
+| `make prod` / `make prod-up` | Build images, create `.env` if missing, start stack |
+| `make prod-ps` | Container status |
+| `make prod-logs` | Follow logs |
+| `make prod-down` | Stop stack |
+| `make prod-restart` | Down then up |
+
+Or raw Compose:
+
+```bash
 docker compose up -d --build
 ```
 
