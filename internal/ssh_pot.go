@@ -7,32 +7,42 @@ import (
 	"log"
 	"time"
 
+	"krain-sec/internal/decoy"
+
 	"github.com/gliderlabs/ssh"
 	"github.com/golang/glog"
 )
 
 func StartSSHServer(ctx context.Context) error {
-	ssh.Handle(func(s ssh.Session) {
-		io.WriteString(s, fmt.Sprintf("Welcome to the Go SSH Server, %s!\n", s.User()))
+	passwordAuth := ssh.PasswordAuth(func(sshCtx ssh.Context, password string) bool {
+		glog.Infof("ssh auth attempt host=%s ip=%s user=%s password=%s",
+			HostFQDN, sshCtx.RemoteAddr().String(), sshCtx.User(), password)
+		return sshCtx.User() == "admin" && password == "secret123"
 	})
 
-	// Configure password authentication
-	passwordAuth := ssh.PasswordAuth(func(ctx ssh.Context, password string) bool {
-		clientIP := ctx.RemoteAddr().String()
-		clientUsername := ctx.User()
-		glog.Infof("client IP: %s, client username: %s", clientIP, clientUsername)
-		return ctx.User() == "admin" && password == "secret123"
-	})
-
-	// Start the server with the authentication option
 	s := &ssh.Server{
-		Addr: ":2222",
-		Handler: ssh.Handler(func(s ssh.Session) {
-			clientIP := s.RemoteAddr().String()
-			clientUsername := s.User()
-			glog.Infof("client IP: %s, client username: %s", clientIP, clientUsername)
-			time.Sleep(10 * time.Second)
-			io.WriteString(s, fmt.Sprintf("Welcome to the Go SSH Server, %s!\n", s.User()))
+		Addr:    ":2222",
+		Version: SSHVersion,
+		Handler: ssh.Handler(func(sess ssh.Session) {
+			remote := ""
+			if addr := sess.RemoteAddr(); addr != nil {
+				remote = addr.String()
+			}
+			user := sess.User()
+			glog.Infof("ssh session open host=%s ip=%s user=%s", HostFQDN, remote, user)
+
+			motd := fmt.Sprintf(
+				"***************************************************************************\n"+
+					"*  Authorized use only. All activity on %s is monitored.  *\n"+
+					"***************************************************************************\n"+
+					"Last login: %s from %s\n",
+				HostFQDN,
+				time.Now().UTC().Format("Mon Jan 2 15:04:05 MST 2006"),
+				remote,
+			)
+			time.Sleep(800 * time.Millisecond)
+			io.WriteString(sess, motd)
+			decoy.RunShell(sess, sess, user, HostShort, HostFQDN, remote)
 		}),
 	}
 	if err := s.SetOption(passwordAuth); err != nil {
@@ -48,11 +58,10 @@ func StartSSHServer(ctx context.Context) error {
 			glog.Info("ssh shutdown err: ", err)
 		}
 	}()
-	log.Println("Starting SSH server on :2222...")
+	log.Printf("Starting SSH server on :2222 as %s...\n", HostFQDN)
 
 	if err := s.ListenAndServe(); err != nil {
 		return err
 	}
-
 	return nil
 }

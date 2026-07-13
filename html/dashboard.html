@@ -545,7 +545,7 @@
         <a class="side-link" href="#">Closed (7d)</a>
       </div>
       <div class="env">
-        <div class="row"><span>Tenant</span><span class="val">ks-prod-8841</span></div>
+        <div class="row"><span>Tenant</span><span class="val">CORP-PROD-TENANT-01</span></div>
         <div class="row"><span>Sensor fleet</span><span class="val">1,284</span></div>
         <div class="row"><span>Ingest lag</span><span class="val">1.2s</span></div>
         <div class="row"><span>License</span><span class="val">Enterprise</span></div>
@@ -611,7 +611,7 @@
                   <td class="mono">INC-28491</td>
                   <td><span class="sev critical">Critical</span></td>
                   <td>Suspicious PowerShell download cradle</td>
-                  <td class="mono">ws-finance-042</td>
+                  <td class="mono">CORP-PROD-WS042.internal</td>
                   <td><span class="status investigating">Investigating</span></td>
                   <td class="mono">18m</td>
                 </tr>
@@ -619,7 +619,7 @@
                   <td class="mono">INC-28487</td>
                   <td><span class="sev high">High</span></td>
                   <td>Brute-force against VPN gateway</td>
-                  <td class="mono">vpn-edge-01</td>
+                  <td class="mono">CORP-PROD-VPN01.internal</td>
                   <td><span class="status contained">Contained</span></td>
                   <td class="mono">1h 12m</td>
                 </tr>
@@ -627,7 +627,7 @@
                   <td class="mono">INC-28482</td>
                   <td><span class="sev high">High</span></td>
                   <td>Possible credential stuffing on SSO</td>
-                  <td class="mono">idp.corp.local</td>
+                  <td class="mono">CORP-PROD-IDP01.internal</td>
                   <td><span class="status open">Open</span></td>
                   <td class="mono">2h 04m</td>
                 </tr>
@@ -635,7 +635,7 @@
                   <td class="mono">INC-28476</td>
                   <td><span class="sev medium">Medium</span></td>
                   <td>Unusual outbound DNS (DGA-like)</td>
-                  <td class="mono">srv-build-09</td>
+                  <td class="mono">CORP-PROD-BLD09.internal</td>
                   <td><span class="status investigating">Investigating</span></td>
                   <td class="mono">4h 31m</td>
                 </tr>
@@ -643,7 +643,7 @@
                   <td class="mono">INC-28471</td>
                   <td><span class="sev medium">Medium</span></td>
                   <td>Unapproved RDP from external ASN</td>
-                  <td class="mono">jump-prod-02</td>
+                  <td class="mono">CORP-PROD-JMP02.internal</td>
                   <td><span class="status contained">Contained</span></td>
                   <td class="mono">6h 18m</td>
                 </tr>
@@ -651,7 +651,7 @@
                   <td class="mono">INC-28463</td>
                   <td><span class="sev low">Low</span></td>
                   <td>Sensor version drift (agent &lt; 4.12)</td>
-                  <td class="mono">fleet · 12 hosts</td>
+                  <td class="mono">CORP-PROD-WS0{31-42}.internal</td>
                   <td><span class="status open">Open</span></td>
                   <td class="mono">11h</td>
                 </tr>
@@ -671,7 +671,7 @@
                 <span class="sev critical">Crit</span>
                 <div>
                   <div class="title">Encoded PowerShell − encodedCommand</div>
-                  <div class="sub">MITRE T1059.001 · ws-finance-042 · user j.chen</div>
+                  <div class="sub">MITRE T1059.001 · CORP-PROD-WS042.internal · user j.chen</div>
                 </div>
                 <span class="when">14:52:08</span>
               </li>
@@ -679,7 +679,7 @@
                 <span class="sev high">High</span>
                 <div>
                   <div class="title">Failed auth spike — 847 attempts / 5m</div>
-                  <div class="sub">Source 185.220.101.x · Tor exit · vpn-edge-01</div>
+                  <div class="sub">Source 185.220.101.x · Tor exit · CORP-PROD-VPN01.internal</div>
                 </div>
                 <span class="when">14:49:41</span>
               </li>
@@ -687,7 +687,7 @@
                 <span class="sev medium">Med</span>
                 <div>
                   <div class="title">New process: certutil.exe −urlcache</div>
-                  <div class="sub">LOLBin · srv-build-09 · parent cmd.exe</div>
+                  <div class="sub">LOLBin · CORP-PROD-BLD09.internal · parent cmd.exe</div>
                 </div>
                 <span class="when">14:41:17</span>
               </li>
@@ -786,7 +786,7 @@
                 <td class="mono">14:41:02</td>
                 <td>system</td>
                 <td>Health probe</td>
-                <td class="mono">detection-engine</td>
+                <td class="mono">CORP-PROD-DET01.internal</td>
                 <td><span class="status ok">OK</span></td>
                 <td class="mono">10.0.4.12</td>
               </tr>
@@ -802,7 +802,7 @@
                 <td class="mono">13:58:11</td>
                 <td>m.okafor</td>
                 <td>Isolate host</td>
-                <td class="mono">ws-finance-042</td>
+                <td class="mono">CORP-PROD-WS042.internal</td>
                 <td><span class="status ok">Queued</span></td>
                 <td class="mono">10.32.8.104</td>
               </tr>
@@ -810,7 +810,7 @@
                 <td class="mono">13:12:44</td>
                 <td>admin</td>
                 <td>API key rotated</td>
-                <td class="mono">siem-forwarder</td>
+                <td class="mono">CORP-PROD-SIEM01.internal</td>
                 <td><span class="status ok">Success</span></td>
                 <td class="mono">10.32.8.19</td>
               </tr>
@@ -822,7 +822,7 @@
   </div>
 
   <footer class="footer-bar">
-    <div>Krain Security Console · build 2026.07.08-rc3 · tenant ks-prod-8841</div>
+    <div>Krain Security Console · build 2026.07.08-rc3 · tenant CORP-PROD-TENANT-01</div>
     <div>
       Session expires <span id="session-exp">—</span>
       · Support: soc-ops@krain.security

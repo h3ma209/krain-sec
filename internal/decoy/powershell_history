@@ -1,0 +1,48 @@
+Get-Date
+$env:COMPUTERNAME
+hostname
+whoami
+Get-Service | Where-Object {$_.Status -ne 'Running'} | Format-Table -AutoSize
+Get-Service sshd, W3SVC, WinRM | Format-List
+Get-Process | Sort-Object CPU -Descending | Select-Object -First 20
+Get-PSDrive
+Get-NetIPAddress | Where-Object {$_.AddressFamily -eq 'IPv4'} | Format-Table
+Get-NetRoute -AddressFamily IPv4 | Select-Object -First 15
+Resolve-DnsName CORP-PROD-SRV04.internal
+Resolve-DnsName CORP-PROD-IDP01.internal
+Resolve-DnsName CORP-PROD-VPN01.internal
+Test-NetConnection CORP-PROD-SRV04.internal -Port 22
+Test-NetConnection CORP-PROD-VPN01.internal -Port 443
+Test-NetConnection CORP-PROD-IDP01.internal -Port 443
+Test-Connection CORP-PROD-JMP02.internal -Count 3
+Get-WinEvent -LogName Security -MaxEvents 30 | Format-Table TimeCreated, Id, LevelDisplayName -AutoSize
+Get-WinEvent -FilterHashtable @{LogName='System'; Level=2} -MaxEvents 20
+Get-Content C:\Windows\System32\drivers\etc\hosts
+Get-Content C:\ProgramData\Corp\inventory.yml
+Select-String -Path C:\ProgramData\Corp\*.yml -Pattern 'CORP-PROD-SRV05'
+Restart-Service -Name WinRM -Force
+Restart-Service -Name sshd
+Get-NetFirewallProfile | Format-Table Name, Enabled
+Get-NetFirewallRule -Enabled True | Where-Object {$_.Direction -eq 'Inbound'} | Select-Object -First 25
+Enter-PSSession -ComputerName CORP-PROD-SRV04.internal -Credential $cred
+Invoke-Command -ComputerName CORP-PROD-JMP02.internal -ScriptBlock { hostname; uptime }
+Copy-Item C:\ProgramData\Corp\nginx.conf.bak \\CORP-PROD-SRV04.internal\C$\Temp\
+Get-ChildItem C:\ProgramData\Corp\logs\ | Sort-Object LastWriteTime -Descending | Select-Object -First 15
+Get-Content C:\ProgramData\Corp\logs\deploy.log -Tail 80
+& C:\ProgramData\Corp\Scripts\corp-healthcheck.ps1
+& C:\ProgramData\Corp\Scripts\sync-logs.ps1 -Dest CORP-PROD-SIEM01.internal
+Get-ScheduledTask | Where-Object {$_.TaskPath -like '\Corp\*'} | Format-Table TaskName, State
+Start-ScheduledTask -TaskName 'CorpHealthCheck'
+Get-ADComputer -Filter 'Name -like "CORP-PROD-*"' -Properties OperatingSystem | Format-Table Name, OperatingSystem
+Get-ADUser -Identity j.chen -Properties LastLogonDate, LockedOut
+Unlock-ADAccount -Identity j.chen
+Set-ADAccountPassword -Identity svc-deploy -Reset -NewPassword $newPass
+gpupdate /force
+ipconfig /all
+nslookup CORP-PROD-BLD09.internal
+tracert -d CORP-PROD-VPN01.internal
+netstat -ano | findstr LISTENING
+Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10
+wmic qfe list brief
+Update-Help -ErrorAction SilentlyContinue
+Clear-Host

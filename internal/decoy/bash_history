@@ -1,0 +1,77 @@
+# ~/.bash_history — CORP-PROD-SRV05.internal (admin)
+# Rotated 2026-07-08 by logrotate; retained for ops audit.
+whoami
+hostname -f
+uptime
+uname -a
+cat /etc/os-release
+df -h
+free -m
+systemctl status ssh
+systemctl status nginx
+systemctl status chrony
+systemctl list-units --failed
+journalctl -u ssh -n 50 --no-pager
+journalctl -u nginx -n 100 --no-pager
+ss -tulpn
+ip -br a
+ip route
+cat /etc/resolv.conf
+dig +short CORP-PROD-SRV04.internal
+dig +short CORP-PROD-IDP01.internal
+dig +short CORP-PROD-VPN01.internal
+nslookup CORP-PROD-JMP02.internal
+ping -c 3 CORP-PROD-SRV04.internal
+ping -c 2 CORP-PROD-BLD09.internal
+traceroute -n CORP-PROD-VPN01.internal
+curl -sI http://CORP-PROD-IDP01.internal/health
+curl -sk https://CORP-PROD-VPN01.internal:443/status
+ssh admin@CORP-PROD-SRV04.internal 'uptime'
+ssh admin@CORP-PROD-JMP02.internal 'hostname -f'
+scp /etc/nginx/nginx.conf admin@CORP-PROD-SRV04.internal:/tmp/nginx.conf.bak
+sudo vim /etc/nginx/sites-available/default
+sudo nginx -t
+sudo systemctl reload nginx
+sudo vim /etc/ssh/sshd_config
+sudo sshd -t
+sudo systemctl reload ssh
+sudo tail -n 200 /var/log/auth.log
+sudo grep -i failed /var/log/auth.log | tail
+sudo cat /var/log/syslog | grep -i error | tail -n 40
+ls -la /etc/ssl/certs/ | head
+openssl x509 -in /etc/ssl/certs/corp-prod-srv05.pem -noout -dates
+crontab -l
+sudo cat /etc/cron.d/corp-healthcheck
+sudo /usr/local/sbin/corp-healthcheck.sh
+sudo /usr/local/sbin/sync-logs.sh --dest CORP-PROD-SIEM01.internal
+df -h /var/log
+sudo logrotate -d /etc/logrotate.d/rsyslog
+apt-get update
+apt list --upgradable
+sudo apt-get install -y htop iotop
+htop
+ps aux --sort=-%mem | head -n 20
+systemctl restart chrony
+timedatectl status
+getent hosts CORP-PROD-WS042.internal
+getent hosts CORP-PROD-TENANT-01.internal
+nmap -sn 10.32.8.0/24
+nmap -p 22,80,443 CORP-PROD-SRV04.internal
+sudo ufw status verbose
+sudo iptables -L -n | head -n 40
+cd /opt/corp/deploy
+ls -la
+git status
+git pull origin main
+sudo ./deploy.sh --env prod --host CORP-PROD-SRV05.internal
+tail -f /var/log/corp/deploy.log
+less /etc/corp/inventory.yml
+grep -R "CORP-PROD-SRV05" /etc/corp/
+sudo vim /etc/corp/inventory.yml
+ansible-playbook -i inventory.yml playbooks/harden.yml --limit CORP-PROD-SRV05.internal
+sudo docker ps
+sudo docker logs --tail 100 corp-agent
+kubectl --context corp-prod get nodes
+kubectl --context corp-prod get pods -n monitoring
+history | tail -n 50
+clear
