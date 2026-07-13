@@ -7,6 +7,11 @@ services:
       - .env
     environment:
       HONEYTOKEN_BASE_URL: ${HONEYTOKEN_BASE_URL:-http://127.0.0.1:8080}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: ${MYSQL_USER:-krain}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-CorpApp!ChangeMe}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-krain}
     ports:
       - "8080:8080"
       - "2222:2222"

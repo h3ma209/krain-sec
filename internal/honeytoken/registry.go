@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 
+	"krain-sec/internal/store"
+
 	"github.com/golang/glog"
 )
 
@@ -96,6 +98,7 @@ func LogHit(kind, token, srcIP, detail string) {
 	hits = append(hits, Hit{Token: token, Kind: kind, SrcIP: srcIP, Detail: detail})
 	hitMu.Unlock()
 	glog.Warningf("HONEYTOKEN_HIT kind=%s token=%s src=%s detail=%q", kind, token, srcIP, detail)
+	store.RecordHoneytokenHit(token, kind, srcIP, detail)
 }
 
 func Content(token string) (string, Meta, bool) {

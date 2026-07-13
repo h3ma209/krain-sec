@@ -140,6 +140,12 @@ docker compose up -d --build
 | Grafana | `3000` (`admin` / `admin` — change this) |
 | MySQL | `3306` |
 
+Grafana ships pre-wired: MySQL datasource **Krain MySQL** + dashboard **Krain Honeypot — Attempts & Requests** (folder *Krain*). Shows HTTP requests, auth attempts, SSH commands, honeytoken hits, WebRTC leaks. Refresh = 10s. No manual setup.
+
+Honeypot writes events when `MYSQL_HOST` is set (Compose does this automatically).
+
+> Reset DB volume if upgrading from an older schema: `docker compose down -v && make prod`
+
 ```bash
 docker compose down
 ```

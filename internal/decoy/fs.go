@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"krain-sec/internal/honeytoken"
+	"krain-sec/internal/store"
 
 	"github.com/golang/glog"
 )
@@ -94,6 +95,7 @@ func RunShell(in io.Reader, out io.Writer, user, hostShort, hostFQDN, remote str
 			continue
 		}
 		glog.Infof("ssh cmd host=%s ip=%s user=%s cmd=%q", hostFQDN, remote, user, line)
+		store.RecordSSHCommand(remote, user, line)
 
 		if !dispatch(out, user, hostShort, hostFQDN, remote, line) {
 			return

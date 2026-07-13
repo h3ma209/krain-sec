@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"krain-sec/internal"
+	"krain-sec/internal/store"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/golang/glog"
@@ -18,6 +19,11 @@ func main() {
 	_ = flag.Set("logtostderr", "true")
 	flag.Parse()
 	defer glog.Flush()
+
+	if err := store.InitFromEnv(); err != nil {
+		glog.Warningf("mysql store unavailable: %v (continuing with logs only)", err)
+	}
+	defer store.Close()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"krain-sec/internal/honeytoken"
+	"krain-sec/internal/store"
 	"net"
 	"net/http"
 	"os"
@@ -302,10 +303,21 @@ func logIPMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			id: len(HTTPClientList) + 1,
 		})
 
-		fmt.Sprint("[HTTP] - %s %s\n", ip, r.URL.Path)
+		rw := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		ctx := context.WithValue(r.Context(), "IP", ip)
-		next(w, r.WithContext(ctx))
+		next(rw, r.WithContext(ctx))
+		store.RecordHTTPRequest(r.Method, r.URL.Path, ip, r.UserAgent(), rw.status)
 	}
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (s *statusRecorder) WriteHeader(code int) {
+	s.status = code
+	s.ResponseWriter.WriteHeader(code)
 }
 
 func validateJWTTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -382,12 +394,15 @@ func POSTLoginPage(w http.ResponseWriter, r *http.Request) {
 
 	username := r.FormValue("username")
 	password := r.FormValue("password")
+	srcIP, _ := r.Context().Value("IP").(string)
 	if err := checkUsernameAndPassword(w, r, username, password); err != nil {
+		store.RecordAuthAttempt("http", srcIP, username, password, false)
 		w.Header().Set("Content-Type", "text/json; charset=utf-8")
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Failed to login"))
 		return
 	}
+	store.RecordAuthAttempt("http", srcIP, username, password, true)
 
 	token := generateJWTToken()
 	http.SetCookie(w, &http.Cookie{
@@ -444,6 +459,10 @@ func telemetryExfil(w http.ResponseWriter, r *http.Request) {
 
 	srcIP, _ := r.Context().Value("IP").(string)
 	glog.Warningf("WEBRTC_LEAK src=%s payload=%v", srcIP, payload)
+
+	addr, _ := payload["address"].(string)
+	raw, _ := json.Marshal(payload)
+	store.RecordWebRTCLeak(srcIP, addr, string(raw))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

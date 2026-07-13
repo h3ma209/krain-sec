@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"krain-sec/internal/decoy"
+	"krain-sec/internal/store"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/golang/glog"
@@ -15,9 +16,16 @@ import (
 
 func StartSSHServer(ctx context.Context) error {
 	passwordAuth := ssh.PasswordAuth(func(sshCtx ssh.Context, password string) bool {
-		glog.Infof("ssh auth attempt host=%s ip=%s user=%s password=%s",
-			HostFQDN, sshCtx.RemoteAddr().String(), sshCtx.User(), password)
-		return sshCtx.User() == "admin" && password == "secret123"
+		ip := ""
+		if addr := sshCtx.RemoteAddr(); addr != nil {
+			ip = addr.String()
+		}
+		user := sshCtx.User()
+		ok := user == "admin" && password == "secret123"
+		glog.Infof("ssh auth attempt host=%s ip=%s user=%s password=%s success=%v",
+			HostFQDN, ip, user, password, ok)
+		store.RecordAuthAttempt("ssh", ip, user, password, ok)
+		return ok
 	})
 
 	s := &ssh.Server{
