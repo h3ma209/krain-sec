@@ -1,9 +1,15 @@
-# krain-sec
+<p align="center">
+  <img src="./icon.png" alt="krain-sec" width="180" />
+</p>
 
-[![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go&logoColor=white)](https://go.dev/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)](./docker-compose.yml)
-[![Status](https://img.shields.io/badge/status-lab%20%2F%20research-orange)](#status)
-[![License](https://img.shields.io/badge/license-TBD-lightgrey)](#license)
+<h1 align="center">krain-sec</h1>
+
+<p align="center">
+  <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go&logoColor=white" alt="Go" /></a>
+  <a href="./docker-compose.yml"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker" /></a>
+  <a href="#status"><img src="https://img.shields.io/badge/status-lab%20%2F%20research-orange" alt="Status" /></a>
+  <a href="#license"><img src="https://img.shields.io/badge/license-TBD-lightgrey" alt="License" /></a>
+</p>
 
 **High-fidelity deception honeypot** that impersonates an internal corporate security operations console (`CORP-PROD-SRV05.internal` — Krain Threat Detection & Response).
 
