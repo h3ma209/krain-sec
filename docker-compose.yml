@@ -3,6 +3,10 @@ services:
     build: .
     container_name: corp-prod-srv05
     hostname: CORP-PROD-SRV05
+    env_file:
+      - .env
+    environment:
+      HONEYTOKEN_BASE_URL: ${HONEYTOKEN_BASE_URL:-http://127.0.0.1:8080}
     ports:
       - "8080:8080"
       - "2222:2222"
@@ -15,6 +19,8 @@ services:
     image: mysql:8.4
     container_name: corp-prod-mysql01
     hostname: CORP-PROD-MYSQL01
+    env_file:
+      - .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CorpRoot!ChangeMe}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-krain}
@@ -37,11 +43,13 @@ services:
     image: grafana/grafana:11.5.2
     container_name: corp-prod-graf01
     hostname: CORP-PROD-GRAF01
+    env_file:
+      - .env
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-http://localhost:3000}
       GF_INSTALL_PLUGINS: ""
     ports:
       - "3000:3000"
