@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"krain-sec/internal/honeytoken"
 	"net"
 	"net/http"
 	"os"
@@ -37,11 +38,13 @@ func StartHTTPServer(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", withMiddleware(landingPage, logIPMiddleware))
 	mux.HandleFunc("/robots.txt", withMiddleware(robotsTxtPage, logIPMiddleware))
+	mux.HandleFunc("/sitemap.xml", withMiddleware(sitemapXMLPage, logIPMiddleware))
 	mux.HandleFunc("/login", withMiddleware(POSTLoginPage, logIPMiddleware))
 	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, logIPMiddleware, validateJWTTokenMiddleware))
 	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware, validateJWTTokenMiddleware))
 	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, logIPMiddleware))
 	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, logIPMiddleware, validateJWTTokenMiddleware))
+	mux.HandleFunc("/logs/", withMiddleware(honeytoken.GzipBomb, logIPMiddleware))
 	s := &http.Server{
 		Addr:         ":8080",
 		Handler:      mux,
@@ -92,15 +95,193 @@ func landingPage(w http.ResponseWriter, r *http.Request) {
 func robotsTxtPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`User-agent: *
+	// Disallow entries are intentional lures — scanners that honor robots still
+	// probe these paths; curious humans click them.
+	w.Write([]byte(`# CORP-PROD-SRV05.internal — Krain Security Operations Console
+# Do not crawl authenticated or internal surfaces.
+
+User-agent: *
+Allow: /
 Disallow: /admin/
+Disallow: /dashboard
 Disallow: /dashboard/
+Disallow: /login
 Disallow: /api/
+Disallow: /api/telemetry/
 Disallow: /internal/
 Disallow: /reports/
+Disallow: /downloads/
+Disallow: /downloads/breakglass.txt
+Disallow: /downloads/aws-keys.csv
+Disallow: /downloads/runbook.txt
+Disallow: /t/
+Disallow: /logs/
+Disallow: /backup/
+Disallow: /config/
+Disallow: /.env
+Disallow: /.git/
+Disallow: /server-status
+Disallow: /phpmyadmin/
+Disallow: /wp-admin/
+
+User-agent: Googlebot
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /downloads/
+Disallow: /t/
+Disallow: /logs/
 
 Sitemap: /sitemap.xml
 `))
+}
+
+func sitemapXMLPage(w http.ResponseWriter, r *http.Request) {
+	scheme := "https"
+	if r.TLS == nil {
+		scheme = "http"
+	}
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	host := r.Host
+	if host == "" {
+		host = HostFQDN
+	}
+	base := scheme + "://" + host
+	lastmod := time.Now().UTC().Format("2006-01-02")
+
+	// Mix of public marketing-ish paths and "accidentally" listed internal
+	// surfaces — scanners follow these; several map to honeytoken / tarpit routes.
+	body := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  <url>
+    <loc>%s/</loc>
+    <lastmod>%s</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>%s/login</loc>
+    <lastmod>%s</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>%s/dashboard</loc>
+    <lastmod>%s</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>%s/reports/executive-summary</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>%s/reports/threat-intel</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>%s/downloads/runbook.txt</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>%s/downloads/breakglass.txt</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>%s/downloads/aws-keys.csv</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>%s/api/health</loc>
+    <lastmod>%s</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>%s/api/v1/status</loc>
+    <lastmod>%s</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>%s/internal/ops</loc>
+    <lastmod>2026-06-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>%s/admin/</loc>
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>%s/logs/</loc>
+    <lastmod>%s</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.1</priority>
+  </url>
+  <url>
+    <loc>%s/backup/console-export-2026-07.tar.gz</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.1</priority>
+  </url>
+  <url>
+    <loc>%s/docs/trust-center</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>%s/docs/api-reference</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>%s/status</loc>
+    <lastmod>%s</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>
+`, base, lastmod,
+		base, lastmod,
+		base, lastmod,
+		base,
+		base,
+		base,
+		base,
+		base,
+		base, lastmod,
+		base, lastmod,
+		base,
+		base,
+		base, lastmod,
+		base,
+		base,
+		base,
+		base, lastmod,
+	)
+
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(body))
 }
 
 type Middleware func(http.HandlerFunc) http.HandlerFunc
@@ -268,4 +449,3 @@ func telemetryExfil(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"ok":true}`))
 }
-
