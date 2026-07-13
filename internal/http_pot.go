@@ -2,8 +2,10 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -37,6 +39,7 @@ func StartHTTPServer(ctx context.Context) error {
 	mux.HandleFunc("/robots.txt", withMiddleware(robotsTxtPage, logIPMiddleware))
 	mux.HandleFunc("/login", withMiddleware(POSTLoginPage, logIPMiddleware))
 	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, logIPMiddleware, validateJWTTokenMiddleware))
+	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware, validateJWTTokenMiddleware))
 	s := &http.Server{
 		Addr:         ":8080",
 		Handler:      mux,
@@ -237,3 +240,30 @@ func dashboardPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(readFile("html/dashboard.html")))
 }
+
+func telemetryExfil(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<16)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	srcIP, _ := r.Context().Value("IP").(string)
+	glog.Warningf("WEBRTC_LEAK src=%s payload=%v", srcIP, payload)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"ok":true}`))
+}
+
