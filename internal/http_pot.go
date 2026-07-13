@@ -184,6 +184,7 @@ func validateJWTToken(ctx context.Context) error {
 
 func POSTLoginPage(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
+	time.Sleep(3 * time.Second)
 
 	// err := json.NewDecoder(r.Body).Decode(&userLoginReq)
 	// if err != nil {

@@ -1,0 +1,12 @@
+.kr
+*
+!html/
+!html/**
+!cmd/
+!cmd/**
+!internal/
+!internal/**
+!go.mod
+!go.sum
+!Dockerfile
+!.dockerignore
