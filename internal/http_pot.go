@@ -40,6 +40,8 @@ func StartHTTPServer(ctx context.Context) error {
 	mux.HandleFunc("/login", withMiddleware(POSTLoginPage, logIPMiddleware))
 	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, logIPMiddleware, validateJWTTokenMiddleware))
 	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware, validateJWTTokenMiddleware))
+	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, logIPMiddleware))
+	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, logIPMiddleware, validateJWTTokenMiddleware))
 	s := &http.Server{
 		Addr:         ":8080",
 		Handler:      mux,

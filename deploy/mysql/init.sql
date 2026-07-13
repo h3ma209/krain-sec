@@ -24,6 +24,17 @@ CREATE TABLE IF NOT EXISTS ssh_commands (
   INDEX idx_ssh_created (created_at)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS honeytoken_hits (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  token_id VARCHAR(64) NOT NULL,
+  kind VARCHAR(32) NOT NULL,
+  src_ip VARCHAR(64) NOT NULL,
+  detail VARCHAR(512) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ht_created (created_at),
+  INDEX idx_ht_token (token_id)
+) ENGINE=InnoDB;
+
 CREATE USER IF NOT EXISTS 'grafana'@'%' IDENTIFIED BY 'GrafanaRead!ChangeMe';
 GRANT SELECT ON krain.* TO 'grafana'@'%';
 FLUSH PRIVILEGES;

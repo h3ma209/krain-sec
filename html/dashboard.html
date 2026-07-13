@@ -134,9 +134,12 @@
       border-radius: 6px;
       background: transparent;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
     }
 
-    .btn-ghost:hover { color: #f8fafc; border-color: var(--faint); }
+    .btn-ghost:hover { color: #f8fafc; border-color: var(--faint); text-decoration: none; }
 
     .shell {
       display: grid;
@@ -562,6 +565,9 @@
           <span class="live">Live</span>
           <span>Refreshed <time id="clock">—</time></span>
           <span>Retention: 90 days</span>
+          <a class="btn-ghost" href="/downloads/runbook.txt">Export runbook</a>
+          <a class="btn-ghost" href="/downloads/breakglass.txt">Break-glass pack</a>
+          <a class="btn-ghost" href="/downloads/aws-keys.csv">AWS audit keys</a>
         </div>
       </div>
 

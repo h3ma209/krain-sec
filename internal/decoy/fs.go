@@ -8,6 +8,8 @@ import (
 	"path"
 	"strings"
 
+	"krain-sec/internal/honeytoken"
+
 	"github.com/golang/glog"
 )
 
@@ -17,10 +19,15 @@ var BashHistory string
 //go:embed powershell_history
 var PowerShellHistory string
 
-// Virtual home paths an admin would poke after landing.
-var homeFiles = map[string]string{
-	".bash_history": BashHistory,
-	".bashrc": `# ~/.bashrc — CORP-PROD-SRV05.internal
+func homeFiles() map[string]string {
+	bg, _, _ := honeytoken.Content(honeytoken.TokenBreakglass)
+	aws, _, _ := honeytoken.Content(honeytoken.TokenAWSKeys)
+	key, _, _ := honeytoken.Content(honeytoken.TokenSSHKey)
+	rb, _, _ := honeytoken.Content(honeytoken.TokenRunbook)
+
+	return map[string]string{
+		".bash_history": BashHistory,
+		".bashrc": `# ~/.bashrc — CORP-PROD-SRV05.internal
 HISTSIZE=5000
 HISTFILESIZE=10000
 HISTCONTROL=ignoredups:erasedups
@@ -29,24 +36,43 @@ export PS1='\[\e[0;32m\]\u@\h:\w\$\[\e[0m\] '
 alias ll='ls -la'
 alias grep='grep --color=auto'
 `,
-	".profile": `# ~/.profile
+		".profile": `# ~/.profile
 if [ -n "$BASH_VERSION" ]; then
   [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
 fi
 `,
-	".local/share/powershell/PSReadLine/ConsoleHost_history.txt": PowerShellHistory,
+		".local/share/powershell/PSReadLine/ConsoleHost_history.txt": PowerShellHistory,
+		"Documents/VPN_Breakglass_Credentials.txt":                   bg,
+		"Documents/CORP_Incident_Response_Runbook.txt":               rb,
+		"aws_keys/corp-prod-readonly.csv":                           aws,
+		".config/corp/id_rsa":                                       key,
+		".ssh/id_rsa_deploy":                                        key,
+		".ssh/config": `Host CORP-PROD-BLD09
+  HostName CORP-PROD-BLD09.internal
+  User deploy
+  IdentityFile ~/.ssh/id_rsa_deploy
+`,
+	}
 }
 
-func fileContent(name string) (string, bool) {
+func normalizePath(name string) string {
 	name = strings.TrimSpace(name)
 	name = strings.TrimPrefix(name, "./")
 	name = strings.TrimPrefix(name, "~/")
 	name = strings.TrimPrefix(name, "/home/admin/")
 	name = path.Clean(name)
-	if name == "." || name == "" {
+	if name == "." {
+		return ""
+	}
+	return name
+}
+
+func fileContent(name string) (string, bool) {
+	name = normalizePath(name)
+	if name == "" {
 		return "", false
 	}
-	content, ok := homeFiles[name]
+	content, ok := homeFiles()[name]
 	return content, ok
 }
 
@@ -69,13 +95,13 @@ func RunShell(in io.Reader, out io.Writer, user, hostShort, hostFQDN, remote str
 		}
 		glog.Infof("ssh cmd host=%s ip=%s user=%s cmd=%q", hostFQDN, remote, user, line)
 
-		if !dispatch(out, user, hostShort, hostFQDN, line) {
+		if !dispatch(out, user, hostShort, hostFQDN, remote, line) {
 			return
 		}
 	}
 }
 
-func dispatch(out io.Writer, user, hostShort, hostFQDN, line string) bool {
+func dispatch(out io.Writer, user, hostShort, hostFQDN, remote, line string) bool {
 	fields := strings.Fields(line)
 	if len(fields) == 0 {
 		return true
@@ -106,11 +132,13 @@ func dispatch(out io.Writer, user, hostShort, hostFQDN, line string) bool {
 	case "history":
 		writeNumberedHistory(out)
 	case "ls":
-		writeLS(out, fields[1:])
+		writeLs(out, fields[1:])
 	case "cat", "head", "tail", "less", "more":
-		writeCat(out, fields[1:])
+		writeCat(out, fields[1:], remote, user)
+	case "find":
+		writeFind(out)
 	case "help":
-		io.WriteString(out, "Builtins: cat ls history pwd whoami hostname id uname clear exit\n")
+		io.WriteString(out, "Builtins: cat ls find history pwd whoami hostname id uname clear exit\n")
 	default:
 		fmt.Fprintf(out, "bash: %s: command not found\n", cmd)
 	}
@@ -129,32 +157,80 @@ func writeNumberedHistory(out io.Writer) {
 	}
 }
 
-func writeLS(out io.Writer, args []string) {
+type dirEntry struct {
+	mode, name string
+	hidden     bool
+	dir        bool
+}
+
+func listingFor(target string) []dirEntry {
+	target = normalizePath(target)
+	switch target {
+	case "", ".":
+		return []dirEntry{
+			{"drwxr-xr-x", ".", true, true},
+			{"drwxr-xr-x", "..", true, true},
+			{"-rw-------", ".bash_history", true, false},
+			{"-rw-r--r--", ".bashrc", true, false},
+			{"-rw-r--r--", ".profile", true, false},
+			{"drwx------", ".local", true, true},
+			{"drwx------", ".config", true, true},
+			{"drwx------", ".ssh", true, true},
+			{"drwxr-xr-x", "Documents", false, true},
+			{"drwxr-xr-x", "aws_keys", false, true},
+			{"drwxr-xr-x", "bin", false, true},
+			{"drwxr-xr-x", "logs", false, true},
+		}
+	case "Documents":
+		return []dirEntry{
+			{"-rw-------", "VPN_Breakglass_Credentials.txt", false, false},
+			{"-rw-r--r--", "CORP_Incident_Response_Runbook.txt", false, false},
+		}
+	case "aws_keys":
+		return []dirEntry{
+			{"-rw-------", "corp-prod-readonly.csv", false, false},
+		}
+	case ".config":
+		return []dirEntry{{"drwx------", "corp", false, true}}
+	case ".config/corp":
+		return []dirEntry{{"-rw-------", "id_rsa", false, false}}
+	case ".ssh":
+		return []dirEntry{
+			{"-rw-------", "id_rsa_deploy", false, false},
+			{"-rw-r--r--", "config", false, false},
+		}
+	case ".local":
+		return []dirEntry{{"drwx------", "share", false, true}}
+	default:
+		return nil
+	}
+}
+
+func writeLs(out io.Writer, args []string) {
 	long, all := false, false
+	target := ""
 	for _, a := range args {
-		if !strings.HasPrefix(a, "-") {
+		if strings.HasPrefix(a, "-") {
+			if strings.Contains(a, "l") {
+				long = true
+			}
+			if strings.Contains(a, "a") {
+				all = true
+			}
 			continue
 		}
-		if strings.Contains(a, "l") {
-			long = true
-		}
-		if strings.Contains(a, "a") {
-			all = true
-		}
+		target = a
 	}
 
-	entries := []struct {
-		mode, name string
-		hidden     bool
-	}{
-		{"drwxr-xr-x", ".", true},
-		{"drwxr-xr-x", "..", true},
-		{"-rw-------", ".bash_history", true},
-		{"-rw-r--r--", ".bashrc", true},
-		{"-rw-r--r--", ".profile", true},
-		{"drwx------", ".local", true},
-		{"drwxr-xr-x", "bin", false},
-		{"drwxr-xr-x", "logs", false},
+	entries := listingFor(target)
+	if entries == nil {
+		// maybe it's a file
+		if _, ok := fileContent(target); ok {
+			fmt.Fprintln(out, path.Base(normalizePath(target)))
+			return
+		}
+		fmt.Fprintf(out, "ls: cannot access '%s': No such file or directory\n", target)
+		return
 	}
 
 	if long {
@@ -171,10 +247,7 @@ func writeLS(out io.Writer, args []string) {
 		if e.hidden && !all {
 			continue
 		}
-		if e.name == "." || e.name == ".." {
-			if all {
-				fmt.Fprintf(out, "%s  ", e.name)
-			}
+		if (e.name == "." || e.name == "..") && !all {
 			continue
 		}
 		fmt.Fprintf(out, "%s  ", e.name)
@@ -182,17 +255,27 @@ func writeLS(out io.Writer, args []string) {
 	io.WriteString(out, "\n")
 }
 
-func writeCat(out io.Writer, args []string) {
+func writeFind(out io.Writer) {
+	for name := range homeFiles() {
+		fmt.Fprintf(out, "/home/admin/%s\n", name)
+	}
+}
+
+func writeCat(out io.Writer, args []string, remote, user string) {
 	seenFile := false
 	for _, raw := range args {
 		if strings.HasPrefix(raw, "-") {
 			continue
 		}
 		seenFile = true
+		rel := normalizePath(raw)
 		content, ok := fileContent(raw)
 		if !ok {
 			fmt.Fprintf(out, "cat: %s: No such file or directory\n", raw)
 			continue
+		}
+		if token, isHoney := honeytoken.PathToToken(rel); isHoney {
+			honeytoken.LogHit("ssh_read", token, remote, fmt.Sprintf("user=%s path=%s", user, rel))
 		}
 		io.WriteString(out, content)
 		if !strings.HasSuffix(content, "\n") {
