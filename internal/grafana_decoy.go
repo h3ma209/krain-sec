@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"krain-sec/internal/store"
+
 	"github.com/golang/glog"
 )
 
@@ -67,6 +69,7 @@ func grafanaLag(next http.Handler) http.Handler {
 			ip = r.RemoteAddr
 		}
 		glog.Infof("grafana decoy %s %s from %s", r.Method, r.URL.Path, ip)
+		store.RecordDecoy("grafana", ip, r.Method+" "+r.URL.Path)
 		time.Sleep(time.Duration(400+rand.IntN(1600)) * time.Millisecond)
 		next.ServeHTTP(w, r)
 	})

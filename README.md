@@ -47,6 +47,7 @@ HTTP login + SOC dashboard, SSH admin shell with decoy artifacts, honeytokens, W
 | **Honeytokens** | Break-glass creds, fake AWS keys, SSH key, runbook + `/t/{id}.gif` beacon |
 | **Lures** | Juicy `robots.txt` + believable `sitemap.xml` |
 | **Tarpit** | `/logs/` gzip bomb for greedy fetchers |
+| **Logs** | Local `./logs/*.jsonl` + glog files (Compose bind-mount) |
 | **Decoys** | Fake MySQL `:3306` + Grafana `:3000` (look open; never useful) |
 
 ---
@@ -138,6 +139,28 @@ make prod              # build, start, print URLs
 
 No real MySQL/Grafana stack. Decoy ports exist so scanners report “open services.”
 
+### Local attack logs
+
+Host directory `./logs` is mounted at `/app/logs` in the container.
+
+| File | Contents |
+|------|----------|
+| `events-YYYY-MM-DD.jsonl` | All events for that UTC day |
+| `auth-*.jsonl` | Login attempts (HTTP + SSH) |
+| `http-*.jsonl` | HTTP requests |
+| `ssh-*.jsonl` | Fake-shell commands |
+| `honeytoken-*.jsonl` | Canary / beacon hits |
+| `webrtc-*.jsonl` | WebRTC exfil payloads |
+| `decoy-*.jsonl` | MySQL / Grafana decoy probes |
+| `krain-sec.*` | glog process logs |
+
+Files with mtime older than **7 days** are deleted on startup and every hour (`LOG_RETENTION_DAYS`).
+
+```bash
+make attack-logs          # tail today's events-*.jsonl
+tail -f logs/auth-$(date -u +%Y-%m-%d).jsonl
+```
+
 ```bash
 docker compose down
 ```
@@ -148,10 +171,10 @@ docker compose down
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
+| `LOG_DIR` | Directory for JSONL + glog (Compose uses `/app/logs`) | `logs` |
+| `LOG_RETENTION_DAYS` | Delete log files older than N days (mtime) | `7` |
 | `HONEYTOKEN_BASE_URL` | Public base for canary beacon links inside planted files | `http://127.0.0.1:8080` |
 | `RATE_LIMIT_*` | Per-IP HTTP rate limits | see [`.env.example`](./.env.example) |
-
-Optional: set `MYSQL_HOST` if you wire your own DB for event logging (not in Compose).
 
 ---
 

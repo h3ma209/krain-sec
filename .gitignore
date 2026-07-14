@@ -1,0 +1,5 @@
+logs/
+*.log
+krain-sec
+.env
+.DS_Store

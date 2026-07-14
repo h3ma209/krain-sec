@@ -1,5 +1,6 @@
 services:
-  # Single honeypot process: HTTP :8080, SSH :22, MySQL decoy :3306, Grafana decoy :3000
+  # Single honeypot: HTTP :8080, SSH :22, MySQL decoy :3306, Grafana decoy :3000
+  # Events → ./logs/*.jsonl + glog files
   krain-sec:
     build: .
     container_name: corp-prod-srv05
@@ -7,6 +8,8 @@ services:
     env_file:
       - .env
     environment:
+      LOG_DIR: /app/logs
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-7}
       HONEYTOKEN_BASE_URL: ${HONEYTOKEN_BASE_URL:-http://127.0.0.1:8080}
       RATE_LIMIT_RPM: ${RATE_LIMIT_RPM:-40}
       RATE_LIMIT_LOGIN_RPM: ${RATE_LIMIT_LOGIN_RPM:-8}
@@ -17,8 +20,8 @@ services:
       - "22:22"
       - "3306:3306"
       - "3000:3000"
+    volumes:
+      - ./logs:/app/logs
     cap_add:
       - NET_BIND_SERVICE
     restart: unless-stopped
-
-volumes: {}

@@ -9,6 +9,8 @@ import (
 	"net"
 	"time"
 
+	"krain-sec/internal/store"
+
 	"github.com/golang/glog"
 )
 
@@ -45,6 +47,7 @@ func handleMySQLDecoy(conn net.Conn) {
 	defer conn.Close()
 	remote := conn.RemoteAddr().String()
 	glog.Infof("mysql decoy connect from %s", remote)
+	store.RecordDecoy("mysql", stripPort(remote), "connect")
 	_ = conn.SetDeadline(time.Now().Add(45 * time.Second))
 
 	// Artificial lag before greeting (backend “busy”)
