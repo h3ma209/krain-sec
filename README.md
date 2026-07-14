@@ -42,7 +42,7 @@ HTTP login + SOC dashboard, SSH admin shell with decoy artifacts, honeytokens, W
 
 | Area | Capabilities |
 |------|----------------|
-| **HTTP** (`:8080`) | Corporate sign-in, JWT dashboard, WebRTC ICE probe, telemetry API |
+| **HTTP** (`:8080`) | Corporate sign-in (WebRTC probe **before** login), JWT dashboard, telemetry API |
 | **SSH** (`:2222`) | OpenSSH-like banner, fake interactive shell, bash/PS history |
 | **Honeytokens** | Break-glass creds, fake AWS keys, SSH key, runbook + `/t/{id}.gif` beacon |
 | **Lures** | Juicy `robots.txt` + believable `sitemap.xml` |

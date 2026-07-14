@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -43,7 +44,7 @@ func StartHTTPServer(ctx context.Context) error {
 	mux.HandleFunc("/sitemap.xml", withMiddleware(sitemapXMLPage, logIPMiddleware))
 	mux.HandleFunc("/login", withMiddleware(POSTLoginPage, logIPMiddleware))
 	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, logIPMiddleware, validateJWTTokenMiddleware))
-	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware, validateJWTTokenMiddleware))
+	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware))
 	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, logIPMiddleware))
 	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, logIPMiddleware, validateJWTTokenMiddleware))
 	mux.HandleFunc("/logs/", withMiddleware(honeytoken.GzipBomb, logIPMiddleware))
@@ -314,14 +315,17 @@ func logIPMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			id: len(HTTPClientList) + 1,
 		})
 
-		// Fake backend lag — slows scanners / credential stuffing
-		delay := time.Duration(1+rand.IntN(9)) * time.Second
-		time.Sleep(delay)
+		// Skip lag for telemetry/beacons so WebRTC + canaries land before navigation
+		path := r.URL.Path
+		if !strings.HasPrefix(path, "/api/telemetry/") && !strings.HasPrefix(path, "/t/") {
+			delay := time.Duration(1+rand.IntN(9)) * time.Second
+			time.Sleep(delay)
+		}
 
 		rw := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		ctx := context.WithValue(r.Context(), "IP", ip)
 		next(rw, r.WithContext(ctx))
-		store.RecordHTTPRequest(r.Method, r.URL.Path, ip, r.UserAgent(), rw.status)
+		store.RecordHTTPRequest(r.Method, path, ip, r.UserAgent(), rw.status)
 	}
 }
 

