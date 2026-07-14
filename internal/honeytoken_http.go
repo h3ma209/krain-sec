@@ -66,3 +66,29 @@ func honeytokenDownload(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(content))
 }
+
+// docsManualDownload serves public operator manuals (PDF honeytokens) — no JWT.
+// Linked from the login page as “documentation”.
+func docsManualDownload(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimPrefix(r.URL.Path, "/docs/")
+	name = path.Base(name)
+	srcIP, _ := r.Context().Value("IP").(string)
+
+	token, ok := honeytoken.ManualFileName(name)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	pdf, meta, ok := honeytoken.ManualPDF(token)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	honeytoken.LogHit("manual_download", token, srcIP, "file="+meta.Filename+" ua="+r.UserAgent())
+	w.Header().Set("Content-Type", meta.ContentType)
+	w.Header().Set("Content-Disposition", "inline; filename=\""+meta.Filename+"\"")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	w.Write(pdf)
+}

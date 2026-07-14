@@ -46,6 +46,7 @@ func StartHTTPServer(ctx context.Context) error {
 	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, logIPMiddleware, validateJWTTokenMiddleware, rateLimitMiddleware))
 	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware, rateLimitMiddleware))
 	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/docs/", withMiddleware(docsManualDownload, logIPMiddleware, rateLimitMiddleware))
 	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, logIPMiddleware, validateJWTTokenMiddleware, rateLimitMiddleware))
 	mux.HandleFunc("/logs/", withMiddleware(honeytoken.GzipBomb, logIPMiddleware, rateLimitMiddleware))
 	mux.HandleFunc("/backup/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
@@ -121,6 +122,11 @@ Disallow: /downloads/
 Disallow: /downloads/breakglass.txt
 Disallow: /downloads/aws-keys.csv
 Disallow: /downloads/runbook.txt
+Disallow: /docs/
+Disallow: /docs/SOC_Console_Operator_Manual.pdf
+Disallow: /docs/VPN_MFA_SignIn_Guide.pdf
+Disallow: /docs/Emergency_Break_Glass_Procedure.pdf
+Disallow: /docs/Incident_Response_Quick_Reference.pdf
 Disallow: /t/
 Disallow: /logs/
 Disallow: /backup/
@@ -255,16 +261,16 @@ func sitemapXMLPage(w http.ResponseWriter, r *http.Request) {
     <priority>0.1</priority>
   </url>
   <url>
-    <loc>%s/docs/trust-center</loc>
-    <lastmod>2026-06-01</lastmod>
+    <loc>%s/docs/SOC_Console_Operator_Manual.pdf</loc>
+    <lastmod>2026-07-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>%s/docs/api-reference</loc>
-    <lastmod>2026-06-01</lastmod>
+    <loc>%s/docs/Emergency_Break_Glass_Procedure.pdf</loc>
+    <lastmod>2026-07-01</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>%s/status</loc>

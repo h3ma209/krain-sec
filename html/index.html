@@ -323,6 +323,71 @@
       line-height: 1.45;
     }
 
+    .manuals {
+      margin-top: 1.5rem;
+      padding: 1rem 1.05rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0b1220;
+    }
+
+    .manuals h3 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 0.35rem;
+    }
+
+    .manuals .lede {
+      font-size: 0.75rem;
+      color: var(--faint);
+      line-height: 1.45;
+      margin-bottom: 0.75rem;
+    }
+
+    .manuals ul {
+      list-style: none;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .manuals a {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.8125rem;
+      color: #cbd5e1;
+      text-decoration: none;
+      padding: 0.4rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    .manuals a:hover {
+      background: rgba(37, 99, 235, 0.12);
+      color: #f8fafc;
+      text-decoration: none;
+    }
+
+    .manuals .badge {
+      flex-shrink: 0;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #fecaca;
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      border-radius: 3px;
+      padding: 0.15rem 0.35rem;
+    }
+
+    .manuals .meta {
+      margin-left: auto;
+      font-size: 0.65rem;
+      color: var(--faint);
+    }
+
     .error {
       display: none;
       margin-bottom: 1rem;
@@ -400,9 +465,9 @@
 
     <div class="brand-bottom">
       <span>&copy; 2026 Krain Security Inc.</span>
-      <a href="#">Status</a>
-      <a href="#">Trust Center</a>
-      <a href="#">Support</a>
+      <a href="/docs/SOC_Console_Operator_Manual.pdf">Operator manual</a>
+      <a href="/docs/VPN_MFA_SignIn_Guide.pdf">VPN guide</a>
+      <a href="/docs/Incident_Response_Quick_Reference.pdf">IR quick ref</a>
     </div>
   </aside>
 
@@ -460,12 +525,50 @@
         Protected by Krain Identity. Unauthorized access is monitored and may be reported.
       </p>
 
+      <section class="manuals" aria-label="Operator documentation">
+        <h3>Operator documentation</h3>
+        <p class="lede">
+          Current manuals for console access, VPN/MFA, and emergency procedures.
+          PDFs open in-browser; use is audited.
+        </p>
+        <ul>
+          <li>
+            <a href="/docs/SOC_Console_Operator_Manual.pdf">
+              <span class="badge">PDF</span>
+              SOC Console Operator Manual
+              <span class="meta">v2026.07</span>
+            </a>
+          </li>
+          <li>
+            <a href="/docs/VPN_MFA_SignIn_Guide.pdf">
+              <span class="badge">PDF</span>
+              VPN &amp; MFA Sign-In Guide
+              <span class="meta">v2026.07</span>
+            </a>
+          </li>
+          <li>
+            <a href="/docs/Emergency_Break_Glass_Procedure.pdf">
+              <span class="badge">PDF</span>
+              Emergency Break-Glass Procedure
+              <span class="meta">RESTRICTED</span>
+            </a>
+          </li>
+          <li>
+            <a href="/docs/Incident_Response_Quick_Reference.pdf">
+              <span class="badge">PDF</span>
+              Incident Response Quick Reference
+              <span class="meta">v2026.07</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+
       <div class="auth-footer">
         <span>Tenant: CORP-PROD-TENANT-01</span>
         <nav>
+          <a href="/docs/SOC_Console_Operator_Manual.pdf">Help</a>
           <a href="#">Privacy</a>
           <a href="#">Terms</a>
-          <a href="#">Help</a>
         </nav>
       </div>
     </div>
