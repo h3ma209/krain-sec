@@ -47,26 +47,23 @@ func main() {
 
 	go func() {
 		if err := internal.StartHTTPServer(ctx); err != nil && err != http.ErrServerClosed {
-			glog.Info("HTTP SERVER ERROR: ", err)
+			glog.Errorf("HTTP SERVER ERROR: %v", err)
 			os.Exit(1)
 		}
 	}()
 	go func() {
 		if err := internal.StartSSHServer(ctx); err != nil && err != ssh.ErrServerClosed {
-			glog.Info("SSH SERVER ERROR: ", err)
-			os.Exit(1)
+			glog.Warningf("SSH decoy unavailable (continuing): %v", err)
 		}
 	}()
 	go func() {
 		if err := internal.StartMySQLDecoy(ctx); err != nil {
-			glog.Info("MYSQL DECOY ERROR: ", err)
-			os.Exit(1)
+			glog.Warningf("MySQL decoy unavailable (continuing): %v", err)
 		}
 	}()
 	go func() {
 		if err := internal.StartGrafanaDecoy(ctx); err != nil {
-			glog.Info("GRAFANA DECOY ERROR: ", err)
-			os.Exit(1)
+			glog.Warningf("Grafana decoy unavailable (continuing): %v", err)
 		}
 	}()
 

@@ -43,7 +43,7 @@ HTTP login + SOC dashboard, SSH admin shell with decoy artifacts, honeytokens, W
 | Area | Capabilities |
 |------|----------------|
 | **HTTP** (`:8080`) | Corporate sign-in (WebRTC probe **before** login), JWT dashboard, telemetry API |
-| **SSH** (`:22`) | OpenSSH-like banner, fake interactive shell, bash/PS history |
+| **SSH** (`:22`) | OpenSSH-like banner, fake interactive shell — move real SSH elsewhere |
 | **Honeytokens** | Break-glass creds, fake AWS keys, SSH key, runbook + `/t/{id}.gif` beacon |
 | **Lures** | Juicy `robots.txt` + believable `sitemap.xml` |
 | **Tarpit** | `/logs/` gzip bomb for greedy fetchers |
@@ -96,7 +96,7 @@ make krain   # needs reflex; sources cmd/krain-sec/.env if present
 | Endpoint | URL |
 |----------|-----|
 | Login / dashboard | http://127.0.0.1:8080 |
-| SSH | `ssh admin@127.0.0.1` |
+| SSH | `ssh admin@127.0.0.1` (decoy on 22) |
 | MySQL decoy | `127.0.0.1:3306` (handshake + Access denied) |
 | Grafana decoy | http://127.0.0.1:3000 (login always fails) |
 
@@ -113,13 +113,40 @@ These are **intentional bait**. Never reuse on real systems.
 
 ---
 
+## Side by side with your real website
+
+On a normal small VPS you already run a site (nginx/Caddy + app on **80/443**). krain-sec is a **second container on the same host** — a decoy “SOC console” meant to soak scanners so they waste time on fake SSH, fake MySQL/Grafana, and bait docs instead of your real app.
+
+```text
+                    Internet
+                        |
+        +---------------v----------------+
+        |            your VPS             |
+        |  :80/:443  →  real website      |
+        |  :8080     →  Aetheris console  |  ← honeypot HTTP
+        |  :22       →  fake SSH shell    |  ← move real SSH to e.g. :2222
+        |  :3306     →  MySQL decoy       |
+        |  :3000     →  Grafana decoy     |
+        |  logs/     →  ./logs on disk    |
+        +--------------------------------+
+```
+
+**Typical flow**
+1. Move real admin SSH off port 22 (e.g. listen on `2222` only from your IP).
+2. `make prod` — honeypot publishes bait ports; real site keeps 80/443 untouched.
+3. Optional: proxy a hostname like `console.example.com` → `127.0.0.1:8080`.
+4. Set `HONEYTOKEN_BASE_URL` to that public bait URL so PDF/canary links resolve.
+5. Watch `./logs` — any hit is hostile noise you can ignore or alert on.
+
+Container uses an **internal** Docker network (no outbound to your DB/LAN), read-only root FS, and CPU/RAM caps so the decoy cannot starve the real site.
+
+---
+
 ## Docker Compose
 
-Single container — HTTP, SSH, MySQL decoy, Grafana decoy:
-
 ```bash
-cp .env.example .env   # first time — set HONEYTOKEN_BASE_URL
-make prod              # build, start, print URLs
+cp .env.example .env   # set HONEYTOKEN_BASE_URL to public bait URL
+make prod
 ```
 
 | Make target | Action |
@@ -133,7 +160,7 @@ make prod              # build, start, print URLs
 | Port | What attackers see |
 |------|--------------------|
 | `8080` | Corporate SOC console |
-| `22` | Fake SSH shell |
+| `22` | Fake SSH shell (move real admin SSH to e.g. `2222`) |
 | `3306` | MySQL 8.4 handshake → always Access denied |
 | `3000` | Grafana login + `/api/health` OK → login never works |
 

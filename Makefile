@@ -25,12 +25,13 @@ prod-up:
 	@echo "==> building and starting honeypot"
 	docker compose --env-file .env up -d --build
 	@echo ""
-	@echo "Honeypot is up:"
+	@echo "Honeypot is up (sidecar-safe):"
 	@echo "  HTTP console     http://127.0.0.1:8080"
-	@echo "  SSH decoy        ssh admin@127.0.0.1"
-	@echo "  MySQL decoy      127.0.0.1:3306  (handshake only — auth always fails)"
-	@echo "  Grafana decoy    http://127.0.0.1:3000  (looks real — login never works)"
-	@echo "  Local logs       ./logs/  (events-YYYY-MM-DD.jsonl …, purge >7d)"
+	@echo "  SSH decoy        ssh admin@127.0.0.1   (port 22 — move real SSH off 22)"
+	@echo "  MySQL decoy      127.0.0.1:3306"
+	@echo "  Grafana decoy    http://127.0.0.1:3000"
+	@echo "  Local logs       ./logs/"
+	@echo "  Set HONEYTOKEN_BASE_URL to your public bait URL"
 	@echo ""
 	@echo "Useful:  make prod-ps | make prod-logs | make prod-down | make attack-logs"
 
