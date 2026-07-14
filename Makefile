@@ -4,10 +4,10 @@ SHELL := /bin/bash
 
 # Local development (hot reload)
 krain:
-	source cmd/krain-sec/.env && reflex -r '\.go' -s -- sh -c 'go run cmd/krain-sec/main.go'
+	source cmd/krain-sec/.env 2>/dev/null; reflex -r '\.go' -s -- sh -c 'go run cmd/krain-sec/main.go'
 
 # ---------------------------------------------------------------------------
-# Production stack: honeypot + MySQL + Grafana
+# Production: single honeypot container (HTTP/SSH + MySQL/Grafana decoys)
 # ---------------------------------------------------------------------------
 
 prod: prod-up
@@ -18,16 +18,16 @@ prod-up:
 	@if [ ! -f .env ]; then \
 		echo "==> creating .env from .env.example"; \
 		cp .env.example .env; \
-		echo "==> edit .env before exposing this host (passwords, HONEYTOKEN_BASE_URL)"; \
+		echo "==> edit .env (HONEYTOKEN_BASE_URL) before exposing"; \
 	fi
-	@echo "==> building and starting production stack"
+	@echo "==> building and starting honeypot"
 	docker compose --env-file .env up -d --build
 	@echo ""
-	@echo "Production stack is up:"
-	@echo "  HTTP honeypot   http://127.0.0.1:8080"
-	@echo "  SSH honeypot    ssh admin@127.0.0.1"
-	@echo "  Grafana         http://127.0.0.1:3000"
-	@echo "  MySQL           127.0.0.1:3306"
+	@echo "Honeypot is up:"
+	@echo "  HTTP console     http://127.0.0.1:8080"
+	@echo "  SSH decoy        ssh admin@127.0.0.1"
+	@echo "  MySQL decoy      127.0.0.1:3306  (handshake only — auth always fails)"
+	@echo "  Grafana decoy    http://127.0.0.1:3000  (looks real — login never works)"
 	@echo ""
 	@echo "Useful:  make prod-ps | make prod-logs | make prod-down"
 

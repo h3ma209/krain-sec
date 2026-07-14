@@ -47,7 +47,7 @@ HTTP login + SOC dashboard, SSH admin shell with decoy artifacts, honeytokens, W
 | **Honeytokens** | Break-glass creds, fake AWS keys, SSH key, runbook + `/t/{id}.gif` beacon |
 | **Lures** | Juicy `robots.txt` + believable `sitemap.xml` |
 | **Tarpit** | `/logs/` gzip bomb for greedy fetchers |
-| **Stack** | Optional MySQL + Grafana via Compose |
+| **Decoys** | Fake MySQL `:3306` + Grafana `:3000` (look open; never useful) |
 
 ---
 
@@ -96,6 +96,8 @@ make krain   # needs reflex; sources cmd/krain-sec/.env if present
 |----------|-----|
 | Login / dashboard | http://127.0.0.1:8080 |
 | SSH | `ssh admin@127.0.0.1` |
+| MySQL decoy | `127.0.0.1:3306` (handshake + Access denied) |
+| Grafana decoy | http://127.0.0.1:3000 (login always fails) |
 
 ---
 
@@ -112,39 +114,29 @@ These are **intentional bait**. Never reuse on real systems.
 
 ## Docker Compose
 
-Production stack (honeypot + MySQL + Grafana):
+Single container — HTTP, SSH, MySQL decoy, Grafana decoy:
 
 ```bash
-cp .env.example .env   # first time — edit secrets / HONEYTOKEN_BASE_URL
+cp .env.example .env   # first time — set HONEYTOKEN_BASE_URL
 make prod              # build, start, print URLs
 ```
 
 | Make target | Action |
 |-------------|--------|
-| `make prod` / `make prod-up` | Build images, create `.env` if missing, start stack |
+| `make prod` / `make prod-up` | Build image, create `.env` if missing, start |
 | `make prod-ps` | Container status |
 | `make prod-logs` | Follow logs |
-| `make prod-down` | Stop stack |
+| `make prod-down` | Stop |
 | `make prod-restart` | Down then up |
 
-Or raw Compose:
+| Port | What attackers see |
+|------|--------------------|
+| `8080` | Corporate SOC console |
+| `22` | Fake SSH shell |
+| `3306` | MySQL 8.4 handshake → always Access denied |
+| `3000` | Grafana login + `/api/health` OK → login never works |
 
-```bash
-docker compose up -d --build
-```
-
-| Service | Port |
-|---------|------|
-| Honeypot HTTP | `8080` |
-| Honeypot SSH | `22` |
-| Grafana | `3000` (`admin` / `admin` — change this) |
-| MySQL | `3306` |
-
-Grafana ships pre-wired: MySQL datasource **Krain MySQL** + dashboard **Krain Honeypot — Attempts & Requests** (folder *Krain*). Shows HTTP requests, auth attempts, SSH commands, honeytoken hits, WebRTC leaks. Refresh = 10s. No manual setup.
-
-Honeypot writes events when `MYSQL_HOST` is set (Compose does this automatically).
-
-> Reset DB volume if upgrading from an older schema: `docker compose down -v && make prod`
+No real MySQL/Grafana stack. Decoy ports exist so scanners report “open services.”
 
 ```bash
 docker compose down
@@ -157,8 +149,9 @@ docker compose down
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `HONEYTOKEN_BASE_URL` | Public base for canary beacon links inside planted files | `http://127.0.0.1:8080` |
+| `RATE_LIMIT_*` | Per-IP HTTP rate limits | see [`.env.example`](./.env.example) |
 
-See [`.env.example`](./.env.example) for MySQL / Grafana / rate-limit settings.
+Optional: set `MYSQL_HOST` if you wire your own DB for event logging (not in Compose).
 
 ---
 
@@ -186,11 +179,12 @@ krain-sec/
 ├── internal/
 │   ├── http_pot.go             # HTTP pot, robots, sitemap, telemetry
 │   ├── ssh_pot.go              # SSH pot
+│   ├── mysql_decoy.go          # Fake MySQL :3306
+│   ├── grafana_decoy.go        # Fake Grafana :3000
 │   ├── identity.go             # CORP-PROD-* naming
 │   ├── decoy/                  # Fake shell + history + virtual FS
 │   └── honeytoken/             # Canaries + gzip tarpit
 ├── html/                       # Login + dashboard UI
-├── deploy/                     # MySQL init, Grafana provisioning
 ├── docker-compose.yml
 ├── Dockerfile
 └── honeypot_architecture_plan.md

@@ -40,6 +40,18 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+	go func() {
+		if err := internal.StartMySQLDecoy(ctx); err != nil {
+			glog.Info("MYSQL DECOY ERROR: ", err)
+			os.Exit(1)
+		}
+	}()
+	go func() {
+		if err := internal.StartGrafanaDecoy(ctx); err != nil {
+			glog.Info("GRAFANA DECOY ERROR: ", err)
+			os.Exit(1)
+		}
+	}()
 
 	<-ctx.Done()
 	glog.Info("SHUTTING DOWN GRACEFULLY")
