@@ -1,5 +1,5 @@
-# Build stage
-FROM golang:1.25-bookworm AS builder
+# Build stage — Alpine + static binary
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /src
 
@@ -10,8 +10,12 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/krain-sec ./cmd/krain-sec \
  && mkdir -p /out/logs
 
-# Runtime stage
-FROM gcr.io/distroless/static-debian12:nonroot
+# Runtime — tiny Alpine (static Go binary needs almost nothing)
+FROM alpine:3.22
+
+RUN adduser -D -H -u 65532 -g nonroot nonroot \
+ && mkdir -p /app/logs \
+ && chown -R nonroot:nonroot /app
 
 WORKDIR /app
 
