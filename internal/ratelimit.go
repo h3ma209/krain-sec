@@ -150,7 +150,7 @@ func writeRateLimitResponse(w http.ResponseWriter, r *http.Request, limit, retry
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Krain Security — Too Many Requests</title>
+  <title>Aetheris Security — Too Many Requests</title>
   <style>
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1220;color:#e2e8f0;
       display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}
@@ -168,7 +168,7 @@ func writeRateLimitResponse(w http.ResponseWriter, r *http.Request, limit, retry
     <p>Limit: <code>%d</code> requests / minute.
       Retry after <code>%d</code> seconds.</p>
     <p>If you believe this is an error, contact
-      <code>soc-ops@krain.security</code>.</p>
+      <code>soc-ops@aetheris.security</code>.</p>
   </div>
 </body>
 </html>`, limit, retryAfter)
@@ -179,7 +179,7 @@ func writeRateLimitResponse(w http.ResponseWriter, r *http.Request, limit, retry
 	w.WriteHeader(http.StatusTooManyRequests)
 	fmt.Fprintf(w, `{
   "error": "rate_limit_exceeded",
-  "message": "Too many requests from this client. Contact soc-ops@krain.security if this persists.",
+  "message": "Too many requests from this client. Contact soc-ops@aetheris.security if this persists.",
   "tenant": "CORP-PROD-TENANT-01",
   "limit_per_minute": %d,
   "retry_after_seconds": %d

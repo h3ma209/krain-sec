@@ -26,7 +26,7 @@ var dirFileTemplates = []string{
 	"siem-forwarder-%s.dump",
 	"okta-scim-sync-%s.json",
 	"pcap-vpn-edge-%s.pcap",
-	"db-snapshot-krain-%s.sql.gz",
+	"db-snapshot-aetheris-%s.sql.gz",
 	"audit-trail-%s.csv",
 	"threat-intel-ioc-%s.txt",
 	"corp-agent-config-%s.conf",

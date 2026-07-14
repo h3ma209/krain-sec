@@ -86,9 +86,10 @@ func docsManualDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	honeytoken.LogHit("manual_download", token, srcIP, "file="+meta.Filename+" ua="+r.UserAgent())
-	w.Header().Set("Content-Type", meta.ContentType)
-	w.Header().Set("Content-Disposition", "inline; filename=\""+meta.Filename+"\"")
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+meta.Filename+"\"")
 	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusOK)
 	w.Write(pdf)
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Krain Security — Sign In</title>
+  <title>Aetheris Security — Sign In</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -179,59 +179,6 @@
       margin-top: 0.4rem;
       font-size: 0.875rem;
       color: var(--muted);
-    }
-
-    .sso {
-      display: grid;
-      gap: 0.5rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .sso-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.55rem;
-      width: 100%;
-      padding: 0.65rem 0.875rem;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      color: #e2e8f0;
-      background: #0b1220;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-    }
-
-    .sso-btn:hover {
-      border-color: #475569;
-      background: #0f172a;
-    }
-
-    .sso-btn svg {
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-    }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1.25rem;
-      color: var(--faint);
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .divider::before,
-    .divider::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: var(--border);
     }
 
     label {
@@ -440,9 +387,9 @@
   <aside class="brand-pane" aria-label="Product">
     <div class="brand-top">
       <div class="brand-lockup">
-        <div class="mark">KS</div>
+        <div class="mark">AE</div>
         <div>
-          <div class="name">Krain Security</div>
+          <div class="name">Aetheris Security</div>
           <div class="sub">Threat Detection &amp; Response</div>
         </div>
       </div>
@@ -456,7 +403,6 @@
         endpoints, and threat intelligence across production tenants.
       </p>
       <div class="trust">
-        <span>SSO ready</span>
         <span>MFA enforced</span>
         <span>SOC 2 Type II</span>
         <span>ISO 27001</span>
@@ -464,10 +410,10 @@
     </div>
 
     <div class="brand-bottom">
-      <span>&copy; 2026 Krain Security Inc.</span>
-      <a href="/docs/SOC_Console_Operator_Manual.pdf">Operator manual</a>
-      <a href="/docs/VPN_MFA_SignIn_Guide.pdf">VPN guide</a>
-      <a href="/docs/Incident_Response_Quick_Reference.pdf">IR quick ref</a>
+      <span>&copy; 2026 Aetheris Security Inc.</span>
+      <a href="/docs/SOC_Console_Operator_Manual.pdf" download target="_blank" rel="noopener">Operator manual</a>
+      <a href="/docs/VPN_MFA_SignIn_Guide.pdf" download target="_blank" rel="noopener">VPN guide</a>
+      <a href="/docs/Incident_Response_Quick_Reference.pdf" download target="_blank" rel="noopener">IR quick ref</a>
     </div>
   </aside>
 
@@ -475,30 +421,12 @@
     <div class="auth-wrap">
       <div class="auth-header">
         <h1>Sign in</h1>
-        <p>Use your Krain Security account or company SSO.</p>
+        <p>Use your corporate credentials to continue.</p>
       </div>
 
       <div id="error" class="error" role="alert">
         Invalid username or password. Contact your administrator if this persists.
       </div>
-
-      <div class="sso">
-        <button type="button" class="sso-btn" onclick="alert('SSO is temporarily unavailable. Sign in with username and password.')">
-          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-            <path d="M7.5 1.5A6 6 0 1 0 13.5 8H8.75V5.5h5.78A6 6 0 0 0 7.5 1.5zm0 13A6 6 0 0 0 13.53 9.5H8.75v2.5A6.01 6.01 0 0 0 7.5 14.5z"/>
-          </svg>
-          Continue with Microsoft
-        </button>
-        <button type="button" class="sso-btn" onclick="alert('SSO is temporarily unavailable. Sign in with username and password.')">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <circle cx="8" cy="8" r="5.5"/>
-            <path d="M8 5.5v5M5.5 8h5"/>
-          </svg>
-          Continue with Okta
-        </button>
-      </div>
-
-      <div class="divider">or sign in with password</div>
 
       <form method="POST" action="/login">
         <label for="username">Work email or username</label>
@@ -522,7 +450,7 @@
       </form>
 
       <p class="hint">
-        Protected by Krain Identity. Unauthorized access is monitored and may be reported.
+        Protected by Aetheris Identity. Unauthorized access is monitored and may be reported.
       </p>
 
       <section class="manuals" aria-label="Operator documentation">
@@ -533,28 +461,28 @@
         </p>
         <ul>
           <li>
-            <a href="/docs/SOC_Console_Operator_Manual.pdf">
+            <a href="/docs/SOC_Console_Operator_Manual.pdf" download target="_blank" rel="noopener">
               <span class="badge">PDF</span>
               SOC Console Operator Manual
               <span class="meta">v2026.07</span>
             </a>
           </li>
           <li>
-            <a href="/docs/VPN_MFA_SignIn_Guide.pdf">
+            <a href="/docs/VPN_MFA_SignIn_Guide.pdf" download target="_blank" rel="noopener">
               <span class="badge">PDF</span>
               VPN &amp; MFA Sign-In Guide
               <span class="meta">v2026.07</span>
             </a>
           </li>
           <li>
-            <a href="/docs/Emergency_Break_Glass_Procedure.pdf">
+            <a href="/docs/Emergency_Break_Glass_Procedure.pdf" download target="_blank" rel="noopener">
               <span class="badge">PDF</span>
               Emergency Break-Glass Procedure
               <span class="meta">RESTRICTED</span>
             </a>
           </li>
           <li>
-            <a href="/docs/Incident_Response_Quick_Reference.pdf">
+            <a href="/docs/Incident_Response_Quick_Reference.pdf" download target="_blank" rel="noopener">
               <span class="badge">PDF</span>
               Incident Response Quick Reference
               <span class="meta">v2026.07</span>
@@ -566,7 +494,7 @@
       <div class="auth-footer">
         <span>Tenant: CORP-PROD-TENANT-01</span>
         <nav>
-          <a href="/docs/SOC_Console_Operator_Manual.pdf">Help</a>
+          <a href="/docs/SOC_Console_Operator_Manual.pdf" download target="_blank" rel="noopener">Help</a>
           <a href="#">Privacy</a>
           <a href="#">Terms</a>
         </nav>

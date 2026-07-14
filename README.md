@@ -11,7 +11,7 @@
   <a href="#license"><img src="https://img.shields.io/badge/license-TBD-lightgrey" alt="License" /></a>
 </p>
 
-**High-fidelity deception honeypot** that impersonates an internal corporate security operations console (`CORP-PROD-SRV05.internal` — Krain Threat Detection & Response).
+**High-fidelity deception honeypot** that impersonates an internal corporate security operations console (`CORP-PROD-SRV05.internal` — Aetheris Threat Detection & Response).
 
 HTTP login + SOC dashboard, SSH admin shell with decoy artifacts, honeytokens, WebRTC leak probe, and crawler lures (`robots.txt` / `sitemap.xml`).
 

@@ -105,7 +105,7 @@ func robotsTxtPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	// Disallow entries are intentional lures — scanners that honor robots still
 	// probe these paths; curious humans click them.
-	w.Write([]byte(`# CORP-PROD-SRV05.internal — Krain Security Operations Console
+	w.Write([]byte(`# CORP-PROD-SRV05.internal — Aetheris Security Operations Console
 # Do not crawl authenticated or internal surfaces.
 
 User-agent: *
@@ -321,9 +321,11 @@ func logIPMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			id: len(HTTPClientList) + 1,
 		})
 
-		// Skip lag for telemetry/beacons so WebRTC + canaries land before navigation
+		// Skip lag for telemetry/beacons/docs so canaries + manuals feel responsive
 		path := r.URL.Path
-		if !strings.HasPrefix(path, "/api/telemetry/") && !strings.HasPrefix(path, "/t/") {
+		if !strings.HasPrefix(path, "/api/telemetry/") &&
+			!strings.HasPrefix(path, "/t/") &&
+			!strings.HasPrefix(path, "/docs/") {
 			delay := time.Duration(1+rand.IntN(9)) * time.Second
 			time.Sleep(delay)
 		}
