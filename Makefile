@@ -25,7 +25,7 @@ prod-up:
 	@echo ""
 	@echo "Production stack is up:"
 	@echo "  HTTP honeypot   http://127.0.0.1:8080"
-	@echo "  SSH honeypot    ssh -p 2222 admin@127.0.0.1"
+	@echo "  SSH honeypot    ssh admin@127.0.0.1"
 	@echo "  Grafana         http://127.0.0.1:3000"
 	@echo "  MySQL           127.0.0.1:3306"
 	@echo ""

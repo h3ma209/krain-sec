@@ -29,7 +29,7 @@ func StartSSHServer(ctx context.Context) error {
 	})
 
 	s := &ssh.Server{
-		Addr:    ":2222",
+		Addr:    ":22",
 		Version: SSHVersion,
 		Handler: ssh.Handler(func(sess ssh.Session) {
 			remote := ""
@@ -66,7 +66,7 @@ func StartSSHServer(ctx context.Context) error {
 			glog.Info("ssh shutdown err: ", err)
 		}
 	}()
-	log.Printf("Starting SSH server on :2222 as %s...\n", HostFQDN)
+	log.Printf("Starting SSH server on :22 as %s...\n", HostFQDN)
 
 	if err := s.ListenAndServe(); err != nil {
 		return err

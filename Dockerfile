@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --from=builder /out/krain-sec /app/krain-sec
 COPY html /app/html
 
-EXPOSE 8080 2222
+EXPOSE 8080 22
 
 USER nonroot:nonroot
 

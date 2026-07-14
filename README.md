@@ -43,7 +43,7 @@ HTTP login + SOC dashboard, SSH admin shell with decoy artifacts, honeytokens, W
 | Area | Capabilities |
 |------|----------------|
 | **HTTP** (`:8080`) | Corporate sign-in (WebRTC probe **before** login), JWT dashboard, telemetry API |
-| **SSH** (`:2222`) | OpenSSH-like banner, fake interactive shell, bash/PS history |
+| **SSH** (`:22`) | OpenSSH-like banner, fake interactive shell, bash/PS history |
 | **Honeytokens** | Break-glass creds, fake AWS keys, SSH key, runbook + `/t/{id}.gif` beacon |
 | **Lures** | Juicy `robots.txt` + believable `sitemap.xml` |
 | **Tarpit** | `/logs/` gzip bomb for greedy fetchers |
@@ -95,7 +95,7 @@ make krain   # needs reflex; sources cmd/krain-sec/.env if present
 | Endpoint | URL |
 |----------|-----|
 | Login / dashboard | http://127.0.0.1:8080 |
-| SSH | `ssh -p 2222 admin@127.0.0.1` |
+| SSH | `ssh admin@127.0.0.1` |
 
 ---
 
@@ -136,7 +136,7 @@ docker compose up -d --build
 | Service | Port |
 |---------|------|
 | Honeypot HTTP | `8080` |
-| Honeypot SSH | `2222` |
+| Honeypot SSH | `22` |
 | Grafana | `3000` (`admin` / `admin` — change this) |
 | MySQL | `3306` |
 
@@ -158,7 +158,7 @@ docker compose down
 |----------|---------|---------|
 | `HONEYTOKEN_BASE_URL` | Public base for canary beacon links inside planted files | `http://127.0.0.1:8080` |
 
-See [`.env.example`](./.env.example) for MySQL / Grafana settings.
+See [`.env.example`](./.env.example) for MySQL / Grafana / rate-limit settings.
 
 ---
 
@@ -169,7 +169,7 @@ curl -s http://127.0.0.1:8080/robots.txt
 curl -s http://127.0.0.1:8080/sitemap.xml | head
 curl -sI http://127.0.0.1:8080/t/ht-brk-a7f3c91e.gif   # → HONEYTOKEN_HIT in logs
 
-ssh -p 2222 admin@127.0.0.1
+ssh admin@127.0.0.1
 # ls Documents
 # cat Documents/VPN_Breakglass_Credentials.txt
 ```
