@@ -5,280 +5,215 @@
 <h1 align="center">krain-sec</h1>
 
 <p align="center">
-  <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go&logoColor=white" alt="Go" /></a>
-  <a href="./docker-compose.yml"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker" /></a>
-  <a href="#status"><img src="https://img.shields.io/badge/status-lab%20%2F%20research-orange" alt="Status" /></a>
-  <a href="#license"><img src="https://img.shields.io/badge/license-TBD-lightgrey" alt="License" /></a>
+  <strong>Decoy honeypot for your VPS — distract attackers from the real website</strong>
 </p>
 
-**High-fidelity deception honeypot** that impersonates an internal corporate security operations console (`CORP-PROD-SRV05.internal` — Aetheris Threat Detection & Response).
-
-HTTP login + SOC dashboard, SSH admin shell with decoy artifacts, honeytokens, WebRTC leak probe, and crawler lures (`robots.txt` / `sitemap.xml`).
-
-> [!WARNING]
-> Deploy only on systems and networks you **own** or are **explicitly authorized** to monitor. For defensive research, SOC training, and controlled deception — not unauthorized collection or entrapment.
+<p align="center">
+  <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go&logoColor=white" alt="Go" /></a>
+  <a href="./docker-compose.yml"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker" /></a>
+  <a href="#goal"><img src="https://img.shields.io/badge/for-small%20teams%20%2F%20VPS-0ea5e9" alt="Audience" /></a>
+</p>
 
 ---
 
-## Table of contents
+## Goal
 
-- [Features](#features)
-- [Who this is for](#who-this-is-for)
-- [Who it attracts](#who-it-attracts)
-- [Quick start](#quick-start)
-- [Default decoy credentials](#default-decoy-credentials)
-- [Docker Compose](#docker-compose)
-- [Configuration](#configuration)
-- [Try the bait](#try-the-bait)
-- [Project layout](#project-layout)
-- [Safety](#safety)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
+**Keep scanners busy on fake doors so your real site stays less interesting.**
+
+krain-sec runs **beside** your website on the same server. It pretends to be an internal security console (**Aetheris Security**, host `CORP-PROD-SRV05.internal`):
+
+- Fake web login + dashboard + operator PDF manuals  
+- Fake SSH on **port 22** (you move real admin SSH elsewhere)  
+- Fake MySQL (`3306`) and Grafana (`3000`) that look open but never help  
+- Planted “secrets,” tarpits, and local attack logs under `./logs`
+
+Made for **small teams and solo operators** — no SOC required. One container, `make prod`, watch the logs.
+
+> [!WARNING]
+> Deploy only on servers **you own**. Bait passwords are fake — never reuse them for real access. This distracts attackers; it does **not** replace patching, backups, TLS, or locking down your real app.
+
+---
+
+## How it works on a real server
+
+```text
+                         Internet
+                             |
+             +---------------v----------------+
+             |            your VPS             |
+             |                                 |
+             |  :80 / :443  →  real website    |  customers
+             |  :8080       →  Aetheris UI     |  bait HTTP
+             |  :22         →  fake SSH        |  bait (real SSH → e.g. :2222)
+             |  :3306       →  MySQL decoy     |
+             |  :3000       →  Grafana decoy   |
+             |  ./logs      →  attack events   |
+             +--------------------------------+
+```
+
+| Step | What you do |
+|------|-------------|
+| 1 | Move **real** SSH off port 22 (e.g. `:2222`, ideally allowlist your IP) |
+| 2 | Clone repo, set `HONEYTOKEN_BASE_URL` in `.env` to your public bait URL |
+| 3 | `make prod` — honeypot starts; site on 80/443 unchanged |
+| 4 | Optional: proxy `console.yourdomain.com` → `127.0.0.1:8080` |
+| 5 | When curious: `make attack-logs` |
+
+The container uses an **internal** Docker network (no outbound to your DB/LAN), read-only filesystem, and caps (~256MB RAM / 0.5 CPU) so the decoy cannot pivot or starve the real site.
 
 ---
 
 ## Features
 
-| Area | Capabilities |
-|------|----------------|
-| **HTTP** (`:8080`) | Corporate sign-in (WebRTC probe **before** login), JWT dashboard, telemetry API |
-| **SSH** (`:22`) | OpenSSH-like banner, fake interactive shell — move real SSH elsewhere |
-| **Honeytokens** | Break-glass creds, fake AWS keys, SSH key, runbook + `/t/{id}.gif` beacon |
-| **Lures** | Juicy `robots.txt` + believable `sitemap.xml` |
-| **Tarpit** | `/logs/` gzip bomb for greedy fetchers |
-| **Logs** | Local `./logs/*.jsonl` + glog files (Compose bind-mount) |
-| **Decoys** | Fake MySQL `:3306` + Grafana `:3000` (look open; never useful) |
+| Feature | What it does |
+|---------|----------------|
+| **SOC console** `:8080` | Corporate sign-in, dashboard, public PDF manuals, `robots.txt` / `sitemap` lures |
+| **SSH decoy** `:22` | Interactive fake shell + canary files in a virtual home directory |
+| **MySQL decoy** `:3306` | Real-looking handshake → always Access denied |
+| **Grafana decoy** `:3000` | Health looks OK → login always fails |
+| **Honeytokens** | Break-glass text, AWS-shaped keys, SSH key, runbooks, PDF plant-IDs + `/t/*.gif` beacons |
+| **Tarpits** | Request lag, infinite directory listings, `/logs/` gzip bomb |
+| **Local logs** | Daily `./logs/*.jsonl`, auto-deleted after 7 days |
+| **Sidecar-safe** | Soft-fail if a decoy port is busy; HTTP bait keeps running |
 
----
-
-## Who this is for
-
-| Audience | Why |
-|----------|-----|
-| Blue teams / SOC | Decoy asset that lights up when scanners or humans poke it |
-| Detection engineers | Labeled HTTP/SSH/canary traffic for rules and pipelines |
-| Researchers / students | Study deception & attribution without touching real IdP |
-| Homelab / purple team | Safe attacker playground on an isolated VLAN |
-
-**Not** a real SSO portal, SIEM, or production auth stack.
-
----
-
-## Who it attracts
-
-- Internet scanners following `robots.txt` / sitemaps  
-- Credential stuffing against the fake console  
-- Curious humans downloading “break-glass” / runbook packs  
-- Low–mid skill operators diving SSH history and canary files  
-
-Optimized for **noisy, high-volume, and curious** adversaries — not a full APT jail (yet).
+**Not included:** real MySQL, real Grafana, SIEM, or enterprise alerting — by design.
 
 ---
 
 ## Quick start
 
-**Requirements:** [Go 1.25+](https://go.dev/dl/), optional [Docker](https://docs.docker.com/) / [reflex](https://github.com/cespare/reflex)
+**Need:** [Docker](https://docs.docker.com/) + Docker Compose.
 
 ```bash
 git clone https://github.com/h3ma209/krain-sec.git
 cd krain-sec
-go mod download
-go run ./cmd/krain-sec
+cp .env.example .env          # edit HONEYTOKEN_BASE_URL when you go public
+make prod                     # build + start
+make attack-logs              # optional: watch probes
 ```
 
-Dev reload:
+| Bait | How to hit it |
+|------|----------------|
+| Console | http://127.0.0.1:8080 |
+| SSH | `ssh admin@127.0.0.1` |
+| MySQL | `127.0.0.1:3306` |
+| Grafana | http://127.0.0.1:3000 |
 
 ```bash
-make krain   # needs reflex; sources cmd/krain-sec/.env if present
+make help    # all commands
+make down    # stop
 ```
 
-| Endpoint | URL |
-|----------|-----|
-| Login / dashboard | http://127.0.0.1:8080 |
-| SSH | `ssh admin@127.0.0.1` (decoy on 22) |
-| MySQL decoy | `127.0.0.1:3306` (handshake + Access denied) |
-| Grafana decoy | http://127.0.0.1:3000 (login always fails) |
+### Decoy credentials (bait only)
 
----
-
-## Default decoy credentials
-
-These are **intentional bait**. Never reuse on real systems.
-
-| Surface | Username | Password |
-|---------|----------|----------|
+| Surface | User | Password |
+|---------|------|----------|
 | HTTP | `admin` | `1234567890` |
 | SSH | `admin` | `secret123` |
 
----
-
-## Side by side with your real website
-
-On a normal small VPS you already run a site (nginx/Caddy + app on **80/443**). krain-sec is a **second container on the same host** — a decoy “SOC console” meant to soak scanners so they waste time on fake SSH, fake MySQL/Grafana, and bait docs instead of your real app.
-
-```text
-                    Internet
-                        |
-        +---------------v----------------+
-        |            your VPS             |
-        |  :80/:443  →  real website      |
-        |  :8080     →  Aetheris console  |  ← honeypot HTTP
-        |  :22       →  fake SSH shell    |  ← move real SSH to e.g. :2222
-        |  :3306     →  MySQL decoy       |
-        |  :3000     →  Grafana decoy     |
-        |  logs/     →  ./logs on disk    |
-        +--------------------------------+
-```
-
-**Typical flow**
-1. Move real admin SSH off port 22 (e.g. listen on `2222` only from your IP).
-2. `make prod` — honeypot publishes bait ports; real site keeps 80/443 untouched.
-3. Optional: proxy a hostname like `console.example.com` → `127.0.0.1:8080`.
-4. Set `HONEYTOKEN_BASE_URL` to that public bait URL so PDF/canary links resolve.
-5. Watch `./logs` — any hit is hostile noise you can ignore or alert on.
-
-Container uses an **internal** Docker network (no outbound to your DB/LAN), read-only root FS, and CPU/RAM caps so the decoy cannot starve the real site.
-
----
-
-## Docker Compose
+### Local Go (optional)
 
 ```bash
-cp .env.example .env   # set HONEYTOKEN_BASE_URL to public bait URL
-make prod
+go run ./cmd/krain-sec
+# or: make dev    # hot reload (reflex)
 ```
 
-| Make target | Action |
-|-------------|--------|
-| `make prod` / `make prod-up` | Build image, create `.env` if missing, start |
-| `make prod-ps` | Container status |
-| `make prod-logs` | Follow logs |
-| `make prod-down` | Stop |
-| `make prod-restart` | Down then up |
+---
 
-| Port | What attackers see |
-|------|--------------------|
-| `8080` | Corporate SOC console |
-| `22` | Fake SSH shell (move real admin SSH to e.g. `2222`) |
-| `3306` | MySQL 8.4 handshake → always Access denied |
-| `3000` | Grafana login + `/api/health` OK → login never works |
+## Make commands
 
-No real MySQL/Grafana stack. Decoy ports exist so scanners report “open services.”
+| Command | Purpose |
+|---------|---------|
+| `make prod` | Build & start honeypot beside your site |
+| `make down` | Stop |
+| `make restart` | Restart |
+| `make logs` | Container stdout |
+| `make ps` | Status |
+| `make build` | Image only |
+| `make attack-logs` | Tail today’s `events-*.jsonl` |
+| `make dev` | Local Go + reflex |
+| `make help` | This list |
 
-### Local attack logs
+---
 
-Host directory `./logs` is mounted at `/app/logs` in the container.
+## Logs
+
+Host folder `./logs` is mounted into the container.
 
 | File | Contents |
 |------|----------|
-| `events-YYYY-MM-DD.jsonl` | All events for that UTC day |
-| `auth-*.jsonl` | Login attempts (HTTP + SSH) |
+| `events-YYYY-MM-DD.jsonl` | All events (UTC day) |
+| `auth-*.jsonl` | HTTP + SSH login attempts |
 | `http-*.jsonl` | HTTP requests |
-| `ssh-*.jsonl` | Fake-shell commands |
-| `honeytoken-*.jsonl` | Canary / beacon hits |
-| `webrtc-*.jsonl` | WebRTC exfil payloads |
-| `decoy-*.jsonl` | MySQL / Grafana decoy probes |
-| `krain-sec.*` | glog process logs |
+| `ssh-*.jsonl` | Commands in the fake shell |
+| `honeytoken-*.jsonl` | Canary / PDF / beacon hits |
+| `webrtc-*.jsonl` | Browser WebRTC probes on the login page |
+| `decoy-*.jsonl` | MySQL / Grafana probes |
 
-Files with mtime older than **7 days** are deleted on startup and every hour (`LOG_RETENTION_DAYS`).
-
-```bash
-make attack-logs          # tail today's events-*.jsonl
-tail -f logs/auth-$(date -u +%Y-%m-%d).jsonl
-```
-
-```bash
-docker compose down
-```
+Retention: files older than **7 days** removed (`LOG_RETENTION_DAYS`).
 
 ---
 
 ## Configuration
 
+Copy [`.env.example`](./.env.example) → `.env`.
+
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `LOG_DIR` | Directory for JSONL + glog (Compose uses `/app/logs`) | `logs` |
-| `LOG_RETENTION_DAYS` | Delete log files older than N days (mtime) | `7` |
-| `HONEYTOKEN_BASE_URL` | Public base for canary beacon links inside planted files | `http://127.0.0.1:8080` |
-| `RATE_LIMIT_*` | Per-IP HTTP rate limits | see [`.env.example`](./.env.example) |
+| `HONEYTOKEN_BASE_URL` | Public URL baked into PDFs / planted files | `http://127.0.0.1:8080` |
+| `LOG_DIR` | Log directory (Compose forces `/app/logs`) | `logs` |
+| `LOG_RETENTION_DAYS` | Delete old log files by mtime | `7` |
+| `RATE_LIMIT_*` | Per-IP HTTP rate limits | see `.env.example` |
 
 ---
 
-## Try the bait
+## Smoke-test the bait
 
 ```bash
 curl -s http://127.0.0.1:8080/robots.txt
-curl -s http://127.0.0.1:8080/sitemap.xml | head
-curl -sI http://127.0.0.1:8080/t/ht-brk-a7f3c91e.gif   # → HONEYTOKEN_HIT in logs
-
-ssh admin@127.0.0.1
-# ls Documents
-# cat Documents/VPN_Breakglass_Credentials.txt
+curl -sI http://127.0.0.1:8080/docs/SOC_Console_Operator_Manual.pdf
+ssh admin@127.0.0.1   # then: ls Documents
 ```
-
-Log signals to watch: `ssh auth attempt`, `WEBRTC_LEAK`, `HONEYTOKEN_HIT`.
 
 ---
 
-## Project layout
+## Layout
 
 ```text
 krain-sec/
-├── cmd/krain-sec/              # Entrypoint
-├── internal/
-│   ├── http_pot.go             # HTTP pot, robots, sitemap, telemetry
-│   ├── ssh_pot.go              # SSH pot
-│   ├── mysql_decoy.go          # Fake MySQL :3306
-│   ├── grafana_decoy.go        # Fake Grafana :3000
-│   ├── identity.go             # CORP-PROD-* naming
-│   ├── decoy/                  # Fake shell + history + virtual FS
-│   └── honeytoken/             # Canaries + gzip tarpit
-├── html/                       # Login + dashboard UI
-├── docker-compose.yml
-├── Dockerfile
-└── honeypot_architecture_plan.md
+├── cmd/krain-sec/         Entrypoint
+├── internal/              HTTP/SSH pots, decoys, honeytokens, file logs
+├── html/                  Login + dashboard (Aetheris brand)
+├── docker-compose.yml     Sidecar deploy (internal net, caps, read-only)
+├── Dockerfile             Alpine runtime
+├── Makefile               prod / logs / attack-logs / dev
+└── .env.example
 ```
 
 ---
 
-## Safety
+## Safety checklist
 
-Before any internet or lab exposure:
-
-1. Dedicated host / VLAN — no shared secrets with real IdP, VPN, or cloud  
-2. Strict egress — pot must not reach production networks  
-3. Out-of-band logging only  
-4. Treat every hit as hostile  
-
----
-
-## Roadmap
-
-See [`honeypot_architecture_plan.md`](./honeypot_architecture_plan.md) for DNS canaries, Office document beacons, Endlessh on port 22, and SIEM shipping.
-
-### Status
-
-Lab / research. Core surfaces shipped: HTTP + SSH pots, Tier-1 honeytokens, WebRTC probe, robots/sitemap lures.
+1. Real SSH **not** on port 22 before you publish bait SSH.  
+2. No shared secrets or DB volumes between honeypot and real site.  
+3. Leave Compose isolation on (internal network, caps, read-only).  
+4. Still harden the real website.  
+5. Anything in `./logs` is hostile — don’t trust it.
 
 ---
 
 ## Contributing
 
-PRs welcome that improve **deception fidelity** and **isolation**. Please do **not** add bridges into real corporate identity or data planes.
-
-1. Fork → feature branch → PR  
-2. Keep decoy credentials non-functional on real systems  
-3. Prefer logging / canaries over “helpful” production features  
+PRs for better decoys and safer defaults welcome. Do not connect this to real IdP, cloud accounts, or production data.
 
 ---
 
 ## License
 
-License not published yet. If you fork for private lab use, keep the ethics warning above. A proper `LICENSE` file will be added when the project is declared open-source.
+TBD. Use only on infrastructure you control.
 
 ---
 
 <p align="center">
-  <sub>Built for blue teams who like their bait medium-rare.</sub>
+  <sub>Bait for the bots. Keep the real site boring.</sub>
 </p>
