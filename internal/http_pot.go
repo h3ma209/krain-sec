@@ -39,19 +39,19 @@ var HTTPClientList []HTTPClient
 
 func StartHTTPServer(ctx context.Context) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", withMiddleware(landingPage, logIPMiddleware))
-	mux.HandleFunc("/robots.txt", withMiddleware(robotsTxtPage, logIPMiddleware))
-	mux.HandleFunc("/sitemap.xml", withMiddleware(sitemapXMLPage, logIPMiddleware))
-	mux.HandleFunc("/login", withMiddleware(POSTLoginPage, logIPMiddleware))
-	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, logIPMiddleware, validateJWTTokenMiddleware))
-	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware))
-	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, logIPMiddleware))
-	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, logIPMiddleware, validateJWTTokenMiddleware))
-	mux.HandleFunc("/logs/", withMiddleware(honeytoken.GzipBomb, logIPMiddleware))
-	mux.HandleFunc("/backup/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware))
-	mux.HandleFunc("/reports/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware))
-	mux.HandleFunc("/archive/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware))
-	mux.HandleFunc("/exports/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware))
+	mux.HandleFunc("/", withMiddleware(landingPage, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/robots.txt", withMiddleware(robotsTxtPage, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/sitemap.xml", withMiddleware(sitemapXMLPage, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/login", withMiddleware(POSTLoginPage, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, logIPMiddleware, validateJWTTokenMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, logIPMiddleware, validateJWTTokenMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/logs/", withMiddleware(honeytoken.GzipBomb, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/backup/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/reports/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/archive/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
+	mux.HandleFunc("/exports/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
 	s := &http.Server{
 		Addr:         ":8080",
 		Handler:      mux,

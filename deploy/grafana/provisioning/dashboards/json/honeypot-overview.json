@@ -523,6 +523,122 @@
           }
         }
       ]
+    },
+    {
+      "type": "stat",
+      "title": "Rate limits 429 (24h)",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 39
+      },
+      "datasource": {
+        "type": "mysql",
+        "uid": "krain-mysql"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) AS value FROM http_requests WHERE status_code = 429 AND created_at >= NOW() - INTERVAL 24 HOUR",
+          "format": "table",
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "datasource": {
+            "type": "mysql",
+            "uid": "krain-mysql"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP 429 rate limits over time",
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 39
+      },
+      "datasource": {
+        "type": "mysql",
+        "uid": "krain-mysql"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT\n  $__timeGroup(created_at, $__interval) AS time,\n  COUNT(*) AS rate_limited\nFROM http_requests\nWHERE $__timeFilter(created_at) AND status_code = 429\nGROUP BY time\nORDER BY time",
+          "format": "time_series",
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "datasource": {
+            "type": "mysql",
+            "uid": "krain-mysql"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 50
+          }
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Recent rate-limited requests",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "datasource": {
+        "type": "mysql",
+        "uid": "krain-mysql"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT created_at AS time, method, path, src_ip, LEFT(user_agent, 80) AS user_agent\nFROM http_requests\nWHERE $__timeFilter(created_at) AND status_code = 429\nORDER BY id DESC\nLIMIT 100",
+          "format": "table",
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "datasource": {
+            "type": "mysql",
+            "uid": "krain-mysql"
+          }
+        }
+      ]
     }
   ],
   "refresh": "10s",
