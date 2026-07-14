@@ -12,6 +12,7 @@
   <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go&logoColor=white" alt="Go" /></a>
   <a href="./docker-compose.yml"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker" /></a>
   <a href="#goal"><img src="https://img.shields.io/badge/for-small%20teams%20%2F%20VPS-0ea5e9" alt="Audience" /></a>
+  <a href="#goal"><img src="https://img.shields.io/badge/image-~23MB%20Alpine-22c55e" alt="Lightweight" /></a>
 </p>
 
 ---
@@ -27,7 +28,9 @@ krain-sec runs **beside** your website on the same server. It pretends to be an 
 - Fake MySQL (`3306`) and Grafana (`3000`) that look open but never help  
 - Planted “secrets,” tarpits, and local attack logs under `./logs`
 
-Made for **small teams and solo operators** — no SOC required. One container, `make prod`, watch the logs.
+Made for **small teams and solo operators** — no SOC required. One small container, `make prod`, watch the logs.
+
+**Lightweight on purpose:** static Go binary on **Alpine** (~**23MB** image), capped at **256MB RAM / 0.5 CPU**, no real database or Grafana stack — safe to park next to a cheap VPS website without eating the box.
 
 > [!WARNING]
 > Deploy only on servers **you own**. Bait passwords are fake — never reuse them for real access. This distracts attackers; it does **not** replace patching, backups, TLS, or locking down your real app.
@@ -59,7 +62,7 @@ Made for **small teams and solo operators** — no SOC required. One container, 
 | 4 | Optional: proxy `console.yourdomain.com` → `127.0.0.1:8080` |
 | 5 | When curious: `make attack-logs` |
 
-The container uses an **internal** Docker network (no outbound to your DB/LAN), read-only filesystem, and caps (~256MB RAM / 0.5 CPU) so the decoy cannot pivot or starve the real site.
+The container uses an **internal** Docker network (no outbound to your DB/LAN), a read-only filesystem, and hard caps (**256MB RAM / 0.5 CPU**) so the decoy cannot pivot or starve the real site.
 
 ---
 
@@ -75,8 +78,9 @@ The container uses an **internal** Docker network (no outbound to your DB/LAN), 
 | **Tarpits** | Request lag, infinite directory listings, `/logs/` gzip bomb |
 | **Local logs** | Daily `./logs/*.jsonl`, auto-deleted after 7 days |
 | **Sidecar-safe** | Soft-fail if a decoy port is busy; HTTP bait keeps running |
+| **Tiny footprint** | Alpine image ~23MB; limit 256MB RAM / 0.5 CPU; no real DB |
 
-**Not included:** real MySQL, real Grafana, SIEM, or enterprise alerting — by design.
+**Not included:** real MySQL, real Grafana, SIEM, or enterprise alerting — by design. Small image, small bill, small blast radius.
 
 ---
 
