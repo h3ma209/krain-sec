@@ -8,6 +8,7 @@ import (
 	"io"
 	"krain-sec/internal/honeytoken"
 	"krain-sec/internal/store"
+	"math/rand/v2"
 	"net"
 	"net/http"
 	"os"
@@ -46,12 +47,16 @@ func StartHTTPServer(ctx context.Context) error {
 	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, logIPMiddleware))
 	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, logIPMiddleware, validateJWTTokenMiddleware))
 	mux.HandleFunc("/logs/", withMiddleware(honeytoken.GzipBomb, logIPMiddleware))
+	mux.HandleFunc("/backup/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware))
+	mux.HandleFunc("/reports/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware))
+	mux.HandleFunc("/archive/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware))
+	mux.HandleFunc("/exports/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware))
 	s := &http.Server{
 		Addr:         ":8080",
 		Handler:      mux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  10 * time.Second,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 45 * time.Second, // room for 1–9s request lag + response
+		IdleTimeout:  60 * time.Second,
 	}
 
 	go func() {
@@ -118,6 +123,8 @@ Disallow: /downloads/runbook.txt
 Disallow: /t/
 Disallow: /logs/
 Disallow: /backup/
+Disallow: /archive/
+Disallow: /exports/
 Disallow: /config/
 Disallow: /.env
 Disallow: /.git/
@@ -131,6 +138,10 @@ Disallow: /api/
 Disallow: /downloads/
 Disallow: /t/
 Disallow: /logs/
+Disallow: /backup/
+Disallow: /archive/
+Disallow: /exports/
+Disallow: /reports/
 
 Sitemap: /sitemap.xml
 `))
@@ -303,6 +314,10 @@ func logIPMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			id: len(HTTPClientList) + 1,
 		})
 
+		// Fake backend lag — slows scanners / credential stuffing
+		delay := time.Duration(1+rand.IntN(9)) * time.Second
+		time.Sleep(delay)
+
 		rw := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		ctx := context.WithValue(r.Context(), "IP", ip)
 		next(rw, r.WithContext(ctx))
@@ -382,7 +397,7 @@ func validateJWTToken(ctx context.Context) error {
 
 func POSTLoginPage(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
-	time.Sleep(3 * time.Second)
+	// request lag applied in logIPMiddleware (1–9s)
 
 	// err := json.NewDecoder(r.Body).Decode(&userLoginReq)
 	// if err != nil {
