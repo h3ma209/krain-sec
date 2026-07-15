@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: help dev prod down restart logs ps build attack-logs
+.PHONY: help dev prod down restart logs ps build attack-logs test
 
 # Default: show commands
 help:
@@ -13,6 +13,7 @@ help:
 	@echo "  make ps           Container status"
 	@echo "  make build        Build image only"
 	@echo "  make attack-logs  Tail today's attack events (./logs)"
+	@echo "  make test         Run unit tests under ./test"
 	@echo "  make dev          Local Go hot-reload (needs reflex)"
 	@echo ""
 	@echo "Before public use: move real SSH off :22, set HONEYTOKEN_BASE_URL in .env"
@@ -51,14 +52,19 @@ build: _env
 attack-logs:
 	@mkdir -p logs
 	@day=$$(date -u +%Y-%m-%d); \
-	f="logs/events-$${day}.jsonl"; \
-	touch "$$f"; \
-	echo "==> $$f (Ctrl-C to stop)"; \
-	tail -f "$$f"
+	echo "==> logs for $${day} UTC"; \
+	ls -lh logs/*-$${day}.jsonl 2>/dev/null || echo "(no files yet)"; \
+	echo ""; \
+	echo "==> following events-$${day}.jsonl (Ctrl-C to stop)"; \
+	touch "logs/events-$${day}.jsonl"; \
+	tail -f "logs/events-$${day}.jsonl"
 
 # ---------------------------------------------------------------------------
 # Local development
 # ---------------------------------------------------------------------------
+
+test:
+	go test ./test/...
 
 dev:
 	mkdir -p logs

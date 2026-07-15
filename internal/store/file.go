@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
+	"log/slog"
 )
 
 var (
@@ -58,11 +58,11 @@ func initLocked() error {
 
 	n, err := purgeOldLocked(time.Now().UTC())
 	if err != nil {
-		glog.Warningf("log retention: initial purge: %v", err)
+		slog.Warn("log retention purge failed", "err", err)
 	} else if n > 0 {
-		glog.Infof("log retention: deleted %d file(s) older than %d day(s)", n, days)
+		slog.Info("log retention purged", "deleted", n, "older_than_days", days)
 	}
-	glog.Infof("file store: writing under %s (retain %d days)", logDir, days)
+	slog.Info("event store ready", "dir", logDir, "retention_days", days)
 	return nil
 }
 
@@ -80,9 +80,9 @@ func StartRetention(ctx context.Context) {
 				n, err := purgeOldLocked(time.Now().UTC())
 				mu.Unlock()
 				if err != nil {
-					glog.Warningf("log retention: %v", err)
+					slog.Warn("log retention purge failed", "err", err)
 				} else if n > 0 {
-					glog.Infof("log retention: deleted %d file(s)", n)
+					slog.Info("log retention purged", "deleted", n)
 				}
 			}
 		}
@@ -162,6 +162,10 @@ func purgeOldLocked(now time.Time) (int, error) {
 			openPaths[f.Name()] = struct{}{}
 		}
 	}
+	// Protect today's app log even though it lives outside this package's writers.
+	if dayStamp != "" {
+		openPaths[filepath.Join(logDir, dayFile("app", dayStamp))] = struct{}{}
+	}
 
 	deleted := 0
 	for _, e := range entries {
@@ -172,7 +176,7 @@ func purgeOldLocked(now time.Time) (int, error) {
 		if _, open := openPaths[path]; open {
 			continue
 		}
-		// Skip live glog symlink (krain-sec.INFO etc.)
+		// Skip symlinks
 		if e.Type()&os.ModeSymlink != 0 {
 			continue
 		}
@@ -184,7 +188,7 @@ func purgeOldLocked(now time.Time) (int, error) {
 			continue
 		}
 		if err := os.Remove(path); err != nil {
-			glog.Warningf("log retention: remove %s: %v", path, err)
+			slog.Warn("log retention remove failed", "path", path, "err", err)
 			continue
 		}
 		deleted++
@@ -199,7 +203,7 @@ func writeEvent(kind, base string, fields map[string]any) {
 		return
 	}
 	if err := ensureDayLocked(); err != nil {
-		glog.Warningf("log rotate day: %v", err)
+		slog.Warn("event store rotate failed", "err", err)
 		return
 	}
 
@@ -212,7 +216,7 @@ func writeEvent(kind, base string, fields map[string]any) {
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {
-		glog.Warningf("log marshal: %v", err)
+		slog.Warn("event store marshal failed", "err", err)
 		return
 	}
 	b = append(b, '\n')
@@ -224,14 +228,21 @@ func writeEvent(kind, base string, fields map[string]any) {
 func writeFileLocked(base string, b []byte) {
 	f := writers[base]
 	if f == nil {
-		glog.Warningf("log writer missing: %s", base)
+		slog.Warn("event store writer missing", "channel", base)
 		return
 	}
-	if _, err := f.Write(b); err != nil {
-		glog.Warningf("log write %s: %v", base, err)
+	n, err := f.Write(b)
+	if err != nil {
+		slog.Warn("event store write failed", "channel", base, "err", err)
 		return
 	}
-	_ = f.Sync()
+	if n != len(b) {
+		slog.Warn("event store short write", "channel", base, "wrote", n, "want", len(b))
+		return
+	}
+	if err := f.Sync(); err != nil {
+		slog.Warn("event store sync failed", "channel", base, "err", err)
+	}
 }
 
 func RecordAuthAttempt(service, srcIP, username, password string, success bool) {
@@ -294,8 +305,8 @@ func truncate(s string, n int) string {
 	return s[:n]
 }
 
-// purgeOldForTest exposes retention delete for tests.
-func purgeOldForTest(now time.Time) (int, error) {
+// PurgeOldForTest exposes retention delete for external tests.
+func PurgeOldForTest(now time.Time) (int, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	return purgeOldLocked(now)

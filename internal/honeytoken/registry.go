@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"krain-sec/internal/store"
+	"log/slog"
 
-	"github.com/golang/glog"
+	"krain-sec/internal/store"
 )
 
 // Stable plant IDs — unique per bait, never grant real access.
@@ -102,7 +102,7 @@ func LogHit(kind, token, srcIP, detail string) {
 		hits = append([]Hit(nil), hits[len(hits)-maxHitsIn:]...)
 	}
 	hitMu.Unlock()
-	glog.Warningf("HONEYTOKEN_HIT kind=%s token=%s src=%s detail=%q", kind, token, srcIP, detail)
+	slog.Warn("honeytoken hit", "kind", kind, "token", token, "ip", srcIP, "detail", detail)
 	store.RecordHoneytokenHit(token, kind, srcIP, detail)
 }
 

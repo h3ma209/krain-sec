@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"krain-sec/internal/store"
+	"log/slog"
 
-	"github.com/golang/glog"
+	"krain-sec/internal/store"
 )
 
 // StartGrafanaDecoy serves a convincing Grafana-like UI on :3000.
@@ -55,7 +55,7 @@ func StartGrafanaDecoy(ctx context.Context) error {
 		_ = s.Shutdown(shutdownCtx)
 	}()
 
-	glog.Info("grafana decoy listening on :3000")
+	slog.Info("grafana listen", "addr", ":3000")
 	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("grafana decoy: %w", err)
 	}
@@ -68,7 +68,11 @@ func grafanaLag(next http.Handler) http.Handler {
 		if ip == "" {
 			ip = r.RemoteAddr
 		}
-		glog.Infof("grafana decoy %s %s from %s", r.Method, r.URL.Path, ip)
+		if r.URL.Path == "/api/health" {
+			slog.Debug("grafana request", "method", r.Method, "path", r.URL.Path, "ip", ip)
+		} else {
+			slog.Info("grafana request", "method", r.Method, "path", r.URL.Path, "ip", ip)
+		}
 		store.RecordDecoy("grafana", ip, r.Method+" "+r.URL.Path)
 		time.Sleep(time.Duration(400+rand.IntN(1600)) * time.Millisecond)
 		next.ServeHTTP(w, r)

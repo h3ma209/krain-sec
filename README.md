@@ -162,7 +162,8 @@ Host folder `./logs` is mounted into the container.
 
 | File | Contents |
 |------|----------|
-| `events-YYYY-MM-DD.jsonl` | All events (UTC day) |
+| `app-YYYY-MM-DD.jsonl` | Operational JSON logs (also stdout) |
+| `events-YYYY-MM-DD.jsonl` | All attack events (UTC day) |
 | `auth-*.jsonl` | HTTP + SSH login attempts |
 | `http-*.jsonl` | HTTP requests |
 | `ssh-*.jsonl` | Commands in the fake shell |
@@ -171,6 +172,8 @@ Host folder `./logs` is mounted into the container.
 | `decoy-*.jsonl` | MySQL / Grafana probes |
 
 Retention: files older than **7 days** removed (`LOG_RETENTION_DAYS`).
+
+Operational logs are JSON (`ts`, `level`, `msg`, attrs). Attack telemetry stays in the event JSONL channels above. Passwords land in `auth-*.jsonl` only — not stdout.
 
 ---
 
@@ -183,6 +186,7 @@ Copy [`.env.example`](./.env.example) → `.env`.
 | `HONEYTOKEN_BASE_URL` | Public URL baked into PDFs / planted files | `http://127.0.0.1:8080` |
 | `LOG_DIR` | Log directory (Compose forces `/app/logs`) | `logs` |
 | `LOG_RETENTION_DAYS` | Delete old log files by mtime | `7` |
+| `LOG_LEVEL` | Operational slog level (`debug`/`info`/`warn`/`error`) | `info` |
 | `JWT_SECRET` | Dashboard cookie signing key (random if unset) | (random) |
 | `MAX_HTTP_INFLIGHT` | Cap concurrent HTTP handlers (else 503) | `64` |
 | `MAX_MYSQL_DECOY` | Cap concurrent MySQL decoy sessions | `16` |

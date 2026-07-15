@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"log/slog"
 )
 
 var dirFileTemplates = []string{
@@ -42,9 +42,10 @@ func InfiniteDirListing(w http.ResponseWriter, r *http.Request) {
 	root := listingRoot(r.URL.Path)
 
 	srcIP, _ := r.Context().Value("IP").(string)
-	glog.Infof("dirtrap path=%s page=%d ip=%s ua=%q", r.URL.Path, page, srcIP, r.UserAgent())
 	if page >= 5 {
-		glog.Warningf("dirtrap deep-crawl path=%s page=%d ip=%s", r.URL.Path, page, srcIP)
+		slog.Warn("dirtrap deep crawl", "path", r.URL.Path, "page", page, "ip", srcIP)
+	} else {
+		slog.Debug("dirtrap", "path", r.URL.Path, "page", page, "ip", srcIP, "ua", r.UserAgent())
 	}
 
 	now := time.Now().UTC()

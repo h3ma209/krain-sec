@@ -9,9 +9,9 @@ import (
 	"net"
 	"time"
 
-	"krain-sec/internal/store"
+	"log/slog"
 
-	"github.com/golang/glog"
+	"krain-sec/internal/store"
 )
 
 // StartMySQLDecoy listens like MySQL 8.x: real-looking handshake, then denies / tarpits.
@@ -21,7 +21,7 @@ func StartMySQLDecoy(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("mysql decoy listen: %w", err)
 	}
-	glog.Info("mysql decoy listening on :3306")
+	slog.Info("mysql listen", "addr", ":3306")
 
 	go func() {
 		<-ctx.Done()
@@ -35,7 +35,7 @@ func StartMySQLDecoy(ctx context.Context) error {
 			case <-ctx.Done():
 				return nil
 			default:
-				glog.Warningf("mysql decoy accept: %v", err)
+				slog.Warn("mysql accept failed", "err", err)
 				continue
 			}
 		}
@@ -54,7 +54,7 @@ func StartMySQLDecoy(ctx context.Context) error {
 func handleMySQLDecoy(conn net.Conn) {
 	defer conn.Close()
 	remote := conn.RemoteAddr().String()
-	glog.Infof("mysql decoy connect from %s", remote)
+	slog.Info("mysql connect", "ip", remote)
 	store.RecordDecoy("mysql", stripPort(remote), "connect")
 	_ = conn.SetDeadline(time.Now().Add(45 * time.Second))
 

@@ -18,8 +18,9 @@ import (
 	"sync"
 	"time"
 
+	"log/slog"
+
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/golang/glog"
 )
 
 var (
@@ -45,11 +46,11 @@ func jwtKey() []byte {
 		b := make([]byte, 32)
 		if _, err := cryptorand.Read(b); err != nil {
 			jwtSecretKey = []byte("honeypot-fallback-change-me")
-			glog.Warning("JWT_SECRET unset and random failed; using weak fallback")
+			slog.Warn("jwt_secret weak fallback", "reason", "JWT_SECRET unset and crypto/rand failed")
 			return
 		}
 		jwtSecretKey = []byte(hex.EncodeToString(b))
-		glog.Info("JWT_SECRET unset; using per-process random secret")
+		slog.Info("jwt_secret ephemeral", "reason", "JWT_SECRET unset")
 	})
 	return jwtSecretKey
 }
@@ -82,16 +83,14 @@ func StartHTTPServer(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
-		glog.Info("shutting down http server")
-
+		slog.Info("http shutting down")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-
 		if err := s.Shutdown(shutdownCtx); err != nil {
-			glog.Info("http shuttdonw err: ", err)
+			slog.Error("http shutdown failed", "err", err)
 		}
 	}()
-	glog.Info("http server on 8080")
+	slog.Info("http listen", "addr", ":8080")
 	return s.ListenAndServe()
 }
 
@@ -384,7 +383,7 @@ func setIP(ctx context.Context, ip string) context.Context {
 func readFile(dir string) string {
 	content, err := os.ReadFile(dir)
 	if err != nil {
-		glog.Error("Error ", err)
+		slog.Error("read file failed", "path", dir, "err", err)
 	}
 	return string(content)
 }
@@ -397,7 +396,7 @@ func generateJWTToken() string {
 
 	tokenString, err := token.SignedString(jwtKey())
 	if err != nil {
-		glog.Warningf("jwt sign: %v", err)
+		slog.Warn("jwt sign failed", "err", err)
 		return ""
 	}
 	return tokenString
@@ -463,9 +462,8 @@ func checkUsernameAndPassword(w http.ResponseWriter, r *http.Request, username, 
 
 	if r.Method == http.MethodPost {
 		if username == "admin" && password == "1234567890" {
-			glog.Warning("Login Successeed from IP: ", r.Context().Value("IP"))
-			glog.Warning("Adding following IP to watch list")
-
+			ip, _ := r.Context().Value("IP").(string)
+			slog.Warn("http auth success", "ip", ip, "user", username)
 		} else {
 			err = errors.New("Wrong Username Password")
 			return err
@@ -502,10 +500,9 @@ func telemetryExfil(w http.ResponseWriter, r *http.Request) {
 	}
 
 	srcIP, _ := r.Context().Value("IP").(string)
-	glog.Warningf("WEBRTC_LEAK src=%s payload=%v", srcIP, payload)
-
 	addr, _ := payload["address"].(string)
 	raw, _ := json.Marshal(payload)
+	slog.Warn("webrtc leak", "ip", srcIP, "address", addr, "bytes", len(raw))
 	store.RecordWebRTCLeak(srcIP, addr, string(raw))
 
 	w.Header().Set("Content-Type", "application/json")

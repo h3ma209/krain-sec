@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"krain-sec/internal/store"
+	"log/slog"
 
-	"github.com/golang/glog"
+	"krain-sec/internal/store"
 )
 
 type rateBucket struct {
@@ -114,8 +114,8 @@ func rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set("X-RateLimit-Policy", fmt.Sprintf("%d;w=%d", limit, int(window.Seconds())))
 
 		if !ok {
-			glog.Warningf("RATE_LIMIT ip=%s method=%s path=%s retry_after=%d",
-				ip, r.Method, r.URL.Path, retryAfter)
+			slog.Warn("rate limit",
+				"ip", ip, "method", r.Method, "path", r.URL.Path, "retry_after", retryAfter)
 			store.RecordHTTPRequest(r.Method, r.URL.Path, ip, r.UserAgent(), http.StatusTooManyRequests)
 			writeRateLimitResponse(w, r, limit, retryAfter)
 			return
