@@ -39,7 +39,15 @@ func StartMySQLDecoy(ctx context.Context) error {
 				continue
 			}
 		}
-		go handleMySQLDecoy(conn)
+		sem := mysqlDecoySem()
+		if !sem.tryAcquire() {
+			_ = conn.Close()
+			continue
+		}
+		go func(c net.Conn) {
+			defer sem.release()
+			handleMySQLDecoy(c)
+		}(conn)
 	}
 }
 

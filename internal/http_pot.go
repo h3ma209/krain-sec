@@ -2,6 +2,8 @@ package internal
 
 import (
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,18 +15,17 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang/glog"
 )
 
-type HTTPClient struct {
-	ip string
-	id int
-}
-
-var JWT_SECRET_KEY = []byte("honeypot")
+var (
+	jwtSecretOnce sync.Once
+	jwtSecretKey  []byte
+)
 
 type contextKey string
 
@@ -35,29 +36,47 @@ type UserLoginRequest struct {
 	Password string `json="password"`
 }
 
-var HTTPClientList []HTTPClient
+func jwtKey() []byte {
+	jwtSecretOnce.Do(func() {
+		if v := os.Getenv("JWT_SECRET"); v != "" {
+			jwtSecretKey = []byte(v)
+			return
+		}
+		b := make([]byte, 32)
+		if _, err := cryptorand.Read(b); err != nil {
+			jwtSecretKey = []byte("honeypot-fallback-change-me")
+			glog.Warning("JWT_SECRET unset and random failed; using weak fallback")
+			return
+		}
+		jwtSecretKey = []byte(hex.EncodeToString(b))
+		glog.Info("JWT_SECRET unset; using per-process random secret")
+	})
+	return jwtSecretKey
+}
 
 func StartHTTPServer(ctx context.Context) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", withMiddleware(landingPage, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/robots.txt", withMiddleware(robotsTxtPage, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/sitemap.xml", withMiddleware(sitemapXMLPage, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/login", withMiddleware(POSTLoginPage, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, logIPMiddleware, validateJWTTokenMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/docs/", withMiddleware(docsManualDownload, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, logIPMiddleware, validateJWTTokenMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/logs/", withMiddleware(honeytoken.GzipBomb, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/backup/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/reports/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/archive/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
-	mux.HandleFunc("/exports/", withMiddleware(honeytoken.InfiniteDirListing, logIPMiddleware, rateLimitMiddleware))
+	// rateLimit outer → sleep/log IP inner (never sleep before 429)
+	mux.HandleFunc("/", withMiddleware(landingPage, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/robots.txt", withMiddleware(robotsTxtPage, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/sitemap.xml", withMiddleware(sitemapXMLPage, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/login", withMiddleware(POSTLoginPage, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/dashboard", withMiddleware(dashboardPage, rateLimitMiddleware, validateJWTTokenMiddleware, logIPMiddleware))
+	mux.HandleFunc("/api/telemetry/exfil", withMiddleware(telemetryExfil, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/t/", withMiddleware(honeytokenBeacon, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/docs/", withMiddleware(docsManualDownload, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/downloads/", withMiddleware(honeytokenDownload, rateLimitMiddleware, validateJWTTokenMiddleware, logIPMiddleware))
+	mux.HandleFunc("/logs/", withMiddleware(honeytoken.GzipBomb, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/backup/", withMiddleware(honeytoken.InfiniteDirListing, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/reports/", withMiddleware(honeytoken.InfiniteDirListing, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/archive/", withMiddleware(honeytoken.InfiniteDirListing, rateLimitMiddleware, logIPMiddleware))
+	mux.HandleFunc("/exports/", withMiddleware(honeytoken.InfiniteDirListing, rateLimitMiddleware, logIPMiddleware))
+
 	s := &http.Server{
 		Addr:         ":8080",
-		Handler:      mux,
+		Handler:      limitHTTPInflight(mux),
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 45 * time.Second, // room for 1–9s request lag + response
+		WriteTimeout: 45 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
@@ -316,11 +335,6 @@ func logIPMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := extractIP(r)
 
-		HTTPClientList = append(HTTPClientList, HTTPClient{
-			ip: ip,
-			id: len(HTTPClientList) + 1,
-		})
-
 		// Skip lag for telemetry/beacons/docs so canaries + manuals feel responsive
 		path := r.URL.Path
 		if !strings.HasPrefix(path, "/api/telemetry/") &&
@@ -377,12 +391,15 @@ func readFile(dir string) string {
 
 func generateJWTToken() string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": "admin",                          // Subject (User ID)
-		"exp": time.Now().Add(time.Hour).Unix(), // Expiration time (Unix timestamp)
+		"sub": "admin",
+		"exp": time.Now().Add(time.Hour).Unix(),
 	})
 
-	tokenString, _ := token.SignedString(JWT_SECRET_KEY)
-	fmt.Printf("Token: %s\n\n", tokenString)
+	tokenString, err := token.SignedString(jwtKey())
+	if err != nil {
+		glog.Warningf("jwt sign: %v", err)
+		return ""
+	}
 	return tokenString
 }
 
@@ -396,7 +413,7 @@ func validateJWTToken(ctx context.Context) error {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return JWT_SECRET_KEY, nil
+		return jwtKey(), nil
 	})
 	if err != nil {
 		return err

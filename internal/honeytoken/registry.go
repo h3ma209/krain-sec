@@ -55,8 +55,9 @@ var registry = map[string]Meta{
 }
 
 var (
-	hitMu sync.Mutex
-	hits  []Hit
+	hitMu     sync.Mutex
+	hits      []Hit
+	maxHitsIn = 1000
 )
 
 type Hit struct {
@@ -96,6 +97,10 @@ func LogHit(kind, token, srcIP, detail string) {
 	token = normalizeToken(token)
 	hitMu.Lock()
 	hits = append(hits, Hit{Token: token, Kind: kind, SrcIP: srcIP, Detail: detail})
+	if len(hits) > maxHitsIn {
+		// keep last maxHitsIn
+		hits = append([]Hit(nil), hits[len(hits)-maxHitsIn:]...)
+	}
 	hitMu.Unlock()
 	glog.Warningf("HONEYTOKEN_HIT kind=%s token=%s src=%s detail=%q", kind, token, srcIP, detail)
 	store.RecordHoneytokenHit(token, kind, srcIP, detail)

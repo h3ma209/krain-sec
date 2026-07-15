@@ -15,6 +15,9 @@ services:
       RATE_LIMIT_LOGIN_RPM: ${RATE_LIMIT_LOGIN_RPM:-8}
       RATE_LIMIT_TRAP_RPM: ${RATE_LIMIT_TRAP_RPM:-20}
       RATE_LIMIT_TELEMETRY_RPM: ${RATE_LIMIT_TELEMETRY_RPM:-60}
+      MAX_HTTP_INFLIGHT: ${MAX_HTTP_INFLIGHT:-64}
+      MAX_MYSQL_DECOY: ${MAX_MYSQL_DECOY:-16}
+      JWT_SECRET: ${JWT_SECRET:-}
     ports:
       - "8080:8080"   # bait console (proxy vhost here if you want)
       - "22:22"       # decoy SSH on the port scanners hit — move real SSH elsewhere

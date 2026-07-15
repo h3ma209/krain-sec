@@ -183,6 +183,9 @@ Copy [`.env.example`](./.env.example) → `.env`.
 | `HONEYTOKEN_BASE_URL` | Public URL baked into PDFs / planted files | `http://127.0.0.1:8080` |
 | `LOG_DIR` | Log directory (Compose forces `/app/logs`) | `logs` |
 | `LOG_RETENTION_DAYS` | Delete old log files by mtime | `7` |
+| `JWT_SECRET` | Dashboard cookie signing key (random if unset) | (random) |
+| `MAX_HTTP_INFLIGHT` | Cap concurrent HTTP handlers (else 503) | `64` |
+| `MAX_MYSQL_DECOY` | Cap concurrent MySQL decoy sessions | `16` |
 | `RATE_LIMIT_*` | Per-IP HTTP rate limits | see `.env.example` |
 
 ---
