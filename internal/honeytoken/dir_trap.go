@@ -114,6 +114,9 @@ func parsePage(r *http.Request) int {
 	for _, key := range []string{"C", "c", "page"} {
 		if v := r.URL.Query().Get(key); v != "" {
 			if n, err := strconv.Atoi(v); err == nil && n > 0 {
+				if n > 10000 {
+					n = 10000
+				}
 				return n
 			}
 		}
@@ -123,6 +126,9 @@ func parsePage(r *http.Request) int {
 	for i, p := range parts {
 		if p == "page" && i+1 < len(parts) {
 			if n, err := strconv.Atoi(parts[i+1]); err == nil && n > 0 {
+				if n > 10000 {
+					n = 10000
+				}
 				return n
 			}
 		}

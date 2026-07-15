@@ -17,6 +17,7 @@ services:
       RATE_LIMIT_TELEMETRY_RPM: ${RATE_LIMIT_TELEMETRY_RPM:-60}
       MAX_HTTP_INFLIGHT: ${MAX_HTTP_INFLIGHT:-64}
       MAX_MYSQL_DECOY: ${MAX_MYSQL_DECOY:-16}
+      MAX_SSH_SESSIONS: ${MAX_SSH_SESSIONS:-32}
       JWT_SECRET: ${JWT_SECRET:-}
     ports:
       - "8080:8080"   # bait console (proxy vhost here if you want)

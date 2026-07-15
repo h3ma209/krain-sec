@@ -54,6 +54,10 @@ func (l *rateLimiter) allow(key string, limit int, window time.Duration) (ok boo
 	now := time.Now()
 	b, exists := l.buckets[key]
 	if !exists || now.After(b.resetAt) {
+		const maxRateBuckets = 20000
+		if !exists && len(l.buckets) >= maxRateBuckets {
+			return false, 0, 60
+		}
 		l.buckets[key] = &rateBucket{count: 1, resetAt: now.Add(window)}
 		return true, limit - 1, 0
 	}

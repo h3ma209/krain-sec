@@ -186,6 +186,7 @@ Copy [`.env.example`](./.env.example) → `.env`.
 | `JWT_SECRET` | Dashboard cookie signing key (random if unset) | (random) |
 | `MAX_HTTP_INFLIGHT` | Cap concurrent HTTP handlers (else 503) | `64` |
 | `MAX_MYSQL_DECOY` | Cap concurrent MySQL decoy sessions | `16` |
+| `MAX_SSH_SESSIONS` | Cap concurrent SSH decoy shells | `32` |
 | `RATE_LIMIT_*` | Per-IP HTTP rate limits | see `.env.example` |
 
 ---

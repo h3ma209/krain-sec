@@ -38,6 +38,8 @@ var (
 	httpSem      chanSem
 	mysqlSemOnce sync.Once
 	mysqlSem     chanSem
+	sshSemOnce   sync.Once
+	sshSem       chanSem
 )
 
 func envIntLimit(key string, def int) int {
@@ -64,6 +66,13 @@ func mysqlDecoySem() chanSem {
 		mysqlSem = newChanSem(envIntLimit("MAX_MYSQL_DECOY", 16))
 	})
 	return mysqlSem
+}
+
+func sshSessionSem() chanSem {
+	sshSemOnce.Do(func() {
+		sshSem = newChanSem(envIntLimit("MAX_SSH_SESSIONS", 32))
+	})
+	return sshSem
 }
 
 // limitHTTPInflight rejects with 503 when too many requests are in flight.

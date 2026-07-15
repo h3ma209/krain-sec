@@ -15,19 +15,22 @@ func GzipBomb(w http.ResponseWriter, r *http.Request) {
 	gzipWriter := gzip.NewWriter(w)
 	defer gzipWriter.Close()
 
-	chunk := make([]byte, 10*1024)
-	// ~50MB uncompressed max; stop early on client cancel or short deadline
-	const totalLoops = 5000
+	chunk := make([]byte, 8*1024)
+	// ~16MB uncompressed budget; exit on cancel
+	const totalLoops = 2000
+	deadline := time.After(12 * time.Second)
 	for i := 0; i < totalLoops; i++ {
 		select {
 		case <-r.Context().Done():
+			return
+		case <-deadline:
 			return
 		default:
 		}
 		if _, err := gzipWriter.Write(chunk); err != nil {
 			return
 		}
-		if i%50 == 0 {
+		if i%25 == 0 {
 			time.Sleep(1 * time.Millisecond)
 		}
 	}

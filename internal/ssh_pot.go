@@ -15,6 +15,8 @@ import (
 )
 
 func StartSSHServer(ctx context.Context) error {
+	sem := sshSessionSem()
+
 	passwordAuth := ssh.PasswordAuth(func(sshCtx ssh.Context, password string) bool {
 		ip := ""
 		if addr := sshCtx.RemoteAddr(); addr != nil {
@@ -31,7 +33,16 @@ func StartSSHServer(ctx context.Context) error {
 	s := &ssh.Server{
 		Addr:    ":22",
 		Version: SSHVersion,
+		MaxTimeout: 30 * time.Minute,
+		IdleTimeout: 10 * time.Minute,
 		Handler: ssh.Handler(func(sess ssh.Session) {
+			if !sem.tryAcquire() {
+				glog.Warningf("ssh session limit ip=%v", sess.RemoteAddr())
+				fmt.Fprintln(sess, "Maximum number of sessions exceeded. Try again later.")
+				return
+			}
+			defer sem.release()
+
 			remote := ""
 			if addr := sess.RemoteAddr(); addr != nil {
 				remote = addr.String()
@@ -48,7 +59,7 @@ func StartSSHServer(ctx context.Context) error {
 				time.Now().UTC().Format("Mon Jan 2 15:04:05 MST 2006"),
 				remote,
 			)
-			time.Sleep(800 * time.Millisecond)
+			time.Sleep(400 * time.Millisecond)
 			io.WriteString(sess, motd)
 			decoy.RunShell(sess, sess, user, HostShort, HostFQDN, remote)
 		}),

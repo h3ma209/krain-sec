@@ -81,7 +81,8 @@ func fileContent(name string) (string, bool) {
 func RunShell(in io.Reader, out io.Writer, user, hostShort, hostFQDN, remote string) {
 	prompt := fmt.Sprintf("%s@%s:~$ ", user, hostShort)
 	scanner := bufio.NewScanner(in)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	// Cap line size so a flood of huge lines cannot pin RAM per session.
+	scanner.Buffer(make([]byte, 0, 16*1024), 64*1024)
 
 	for {
 		if _, err := io.WriteString(out, prompt); err != nil {
