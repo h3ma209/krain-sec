@@ -70,17 +70,33 @@ The container uses an **internal** Docker network (no outbound to your DB/LAN), 
 
 | Feature | What it does |
 |---------|----------------|
-| **SOC console** `:8080` | Corporate sign-in, dashboard, public PDF manuals, `robots.txt` / `sitemap` lures |
-| **SSH decoy** `:22` | Interactive fake shell + canary files in a virtual home directory |
-| **MySQL decoy** `:3306` | Real-looking handshake → always Access denied |
-| **Grafana decoy** `:3000` | Health looks OK → login always fails |
-| **Honeytokens** | Break-glass text, AWS-shaped keys, SSH key, runbooks, PDF plant-IDs + `/t/*.gif` beacons |
-| **Tarpits** | Request lag, infinite directory listings, `/logs/` gzip bomb |
-| **Local logs** | Daily `./logs/*.jsonl`, auto-deleted after 7 days |
-| **Sidecar-safe** | Soft-fail if a decoy port is busy; HTTP bait keeps running |
-| **Tiny footprint** | Alpine image ~23MB; limit 256MB RAM / 0.5 CPU; no real DB |
+| **SOC console** `:8080` | Fake Aetheris login and JWT dashboard that look like a real ops console |
+| **Operator manuals** `/docs/` | Multi-page bait PDFs on the login page, with canary plant-IDs and verify links |
+| **Crawler lures** | `robots.txt` and `sitemap.xml` that advertise “forbidden” paths scanners love to hit |
+| **WebRTC probe** | On login-page load, attempts a STUN/ICE leak and posts results to telemetry |
+| **Canary beacons** `/t/*.gif` | Tiny tracking pixel that logs when someone opens a planted link or PDF |
+| **Auth downloads** `/downloads/` | Fake break-glass, AWS keys, SSH key, and runbook (after decoy login) |
+| **SSH decoy** `:22` | Fake interactive shell with history and “emergency” files in a virtual home |
+| **MySQL decoy** `:3306` | Speaks a real-looking MySQL handshake, then always returns Access denied |
+| **Grafana decoy** `:3000` | Grafana-like UI and healthy `/api/health`; login never succeeds |
+| **Infinite dirs** | Endless Apache-style indexes on `/backup/` `/reports/` `/archive/` `/exports/` |
+| **Gzip bomb** `/logs/` | Serves an enormous compressed payload to stall greedy download tools |
+| **Request lag** | Adds 1–9 seconds of delay on most HTTP paths so automation slows down |
+| **Rate limits** | Per-IP limits (login, traps, telemetry, default) that return 429 when exceeded |
+| **Honeytokens** | Planted credentials and keys in HTTP docs and the SSH home directory |
+| **Local logs** | Writes daily JSONL under `./logs` (auth, HTTP, SSH, tokens, WebRTC, decoys) |
+| **Log retention** | Deletes log files older than 7 days so disk use stays bounded |
+| **Corp identity** | Consistent `CORP-PROD-*` host names across banners, MOTD, and documents |
+| **Sidecar deploy** | Runs next to your real site; customers stay on 80/443, bait gets the rest |
+| **Isolation** | Internal Docker network, read-only filesystem, and dropped capabilities |
+| **Resource caps** | Hard limit of 256MB RAM / 0.5 CPU so the decoy cannot starve the real site |
+| **Soft-fail decoys** | If SSH, MySQL, or Grafana cannot bind, the HTTP bait keeps running |
+| **Tiny image** | ~23MB Alpine image with a static Go binary — no real DB or Grafana stack |
 
-**Not included:** real MySQL, real Grafana, SIEM, or enterprise alerting — by design. Small image, small bill, small blast radius.
+**Not included:** real MySQL, real Grafana, or SIEM — by design. Small image, small bill, small blast radius.
+
+
+
 
 ---
 
