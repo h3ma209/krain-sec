@@ -19,7 +19,7 @@
 
 ## Goal
 
-**Keep scanners busy on fake doors so your real site stays less interesting.**
+**Keep scanners/crawlers/bots busy on fake doors so your real site stays less interesting.**
 
 krain-sec runs **beside** your website on the same server. It pretends to be an internal security console (**Aetheris Security**, host `CORP-PROD-SRV05.internal`):
 
