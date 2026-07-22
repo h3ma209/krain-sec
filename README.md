@@ -21,7 +21,9 @@
 
 **Keep scanners/crawlers/bots busy on fake doors so your real site stays less interesting.**
 
-krain-sec runs **beside** your website on the same server. It pretends to be an internal security console (**Aetheris Security**, host `CORP-PROD-SRV05.internal`):
+Your real website should look uninteresting to scanners. krain-sec parks a louder, juicier fake beside it — fake SSH, fake MySQL, fake Grafana, and a fake SOC console — giving commodity scanners and curious intruders believable dead ends to investigate.
+
+krain-sec runs **beside** your website on the same server. It pretends to be an actual part of the server
 
 - Fake web login + dashboard + operator PDF manuals  
 - Fake SSH on **port 22** (you move real admin SSH elsewhere)  
