@@ -240,10 +240,10 @@ PRs for better decoys and safer defaults welcome. Do not connect this to real Id
 
 ## License
 
-TBD. Use only on infrastructure you control.
+AGPL-3.0 license
 
 ---
 
 <p align="center">
-  <sub>Bait for the bots. Keep the real site boring.</sub>
+  <sub>Bait for the bots and crawlers and scanners. Keep the real site boring.</sub>
 </p>
