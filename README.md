@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./icon.png" alt="krain-sec" width="180" />
+  <img src="./logo.png" alt="krain-sec" width="180" />
 </p>
 
 <h1 align="center">krain-sec</h1>
